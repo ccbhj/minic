@@ -1,0 +1,6 @@
+{
+    "C_Cpp.dimInactiveRegions": true,
+    "files.associations": {
+        "iosfwd": "cpp"
+    }
+}
