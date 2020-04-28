@@ -1,7 +1,7 @@
 #!/bin/bash
 
-for f in " ./test/*.tiny"
+for f in " ./test/*.mc"
 do
   echo --------------------- $f ------------------------------
-  ./tiny $f
+  ./minic $f
 done

@@ -4,12 +4,14 @@
 #include <string>
 
 
+#include "tokens.h"
 #include "scanner.h"
 #undef YY_DECL
 #define YY_DECL ccbhj::Parser::token_type ccbhj::Scanner::yylex( ccbhj::Parser::semantic_type* const yylval, ccbhj::Parser::location_type* loc)
 
 using token = ccbhj::Parser::token;
 using token_type = ccbhj::Parser::token_type;
+using type = ccbhj::Type;
 #define yyterminate()  return (token::END)
 #define YY_NO_UNISTD_H
 #define YY_USER_ACTION loc->step(); loc->columns(yyleng);
@@ -34,11 +36,11 @@ using token_type = ccbhj::Parser::token_type;
 
 ","         { return token::COMMA; }
 ";"         { return token::SEMI; }
-"="        { return token::ASSIGN; }
+"="         { return token::ASSIGN; }
 "("         { return token::LPAREN; }
 ")"         { return token::RPAREN; }
-"{"         { return token::RBRACE; }
-"}"         { return token::LBRACE; }
+"}"         { return token::RBRACE; }
+"{"         { return token::LBRACE; }
 "["         { return token::LBRACKET; }
 "]"         { return token::RBRACKET; }
 "+"         { return token::PLUS; }
@@ -51,9 +53,12 @@ using token_type = ccbhj::Parser::token_type;
 ">"         { return token::GREATER; }
 "<="        { return token::ELESS;}
 ">="        { return token::EGREATER; }
+"int"       { return token::INT; }
+"void"      { return token::VOID; }
 "if"        { return token::IF; }
 "else"      { return token::ELSE; }
 "while"     { return token::WHILE; }
+"return"    { return token::RETURN; }
 
 [0-9]+      {
                 yylval->STR = new std::string(yytext, yyleng);

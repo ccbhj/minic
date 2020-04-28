@@ -2,6 +2,7 @@
 #define _AST_
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <iterator>
 #include <ostream>
@@ -9,6 +10,8 @@
 #include <vector>
 
 #include "tokens.h"
+
+#define T2STR(t) (t == Type::int_ ? "int": "void")
 
 namespace ccbhj {
 
@@ -42,16 +45,7 @@ public:
   virtual ~StmtNode() {}
 };
 using StmtList = std::vector<StmtNode *>;
-
 // Expression evaluates to  a value, but statements don't
-
-// Formal Node
-// 形参
-class FormalNode : public Node {
-public:
-  FormalNode() = default;
-  ~FormalNode() = default;
-};
 
 /*
     Build-in function Node
@@ -81,6 +75,23 @@ public:
 };
 */
 
+class BlockNode : public StmtNode {
+public:
+  StmtList statements;
+  BlockNode() {}
+  ~BlockNode() {
+    for (StmtNode *s : statements) {
+      delete s;
+    }
+  }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "BLOCK:" << std::endl;
+    std::for_each(statements.begin(), statements.end(),
+        [&](StmtNode* s) { s->print(os, padding + 1);  });
+    os << get_indent(padding) << "ENDBLOCK" << std::endl;
+  }
+};
+
 // NumNode is a number type node.
 class NumNode : public ExpNode {
 public:
@@ -92,71 +103,66 @@ public:
   }
 };
 
-class BlockNode : public ExpNode {
-public:
-  StmtList statements;
-  BlockNode() {}
-  ~BlockNode() {
-    for (StmtNode *s : statements) {
-      delete s;
-    }
-  }
-  void print(std::ostream &os, const size_t padding) const override {
-    os << get_indent(padding) << "BLOCK:" << std::endl;
-    for (StmtNode *n : statements) {
-      n->print(os, padding + 1);
-    }
-    os << get_indent(padding) << "ENDBLOCK" << std::endl;
-  }
-};
-
 class IdentifierNode : public ExpNode {
 public:
-  const std::string name;
-  IdentifierNode(const std::string &name) : name(name) {}
-  ~IdentifierNode() = default;
+  const std::string *name;
+  IdentifierNode(const std::string *name) : name(name) {}
+  ~IdentifierNode() { if (name) delete name; }
   void print(std::ostream &os, const size_t padding) const override {
-    os << get_indent(padding) << "symbol: " << name << std::endl;
+    os << get_indent(padding) << "symbol: " << *name << std::endl;
   }
 };
 
-class Formal : public FormalNode {
+
+class Formal : public StmtNode {
 public:
-  IdentifierNode *type_decl;
+  Type type_decl;
   IdentifierNode *id;
-  Formal(IdentifierNode *type_decl, IdentifierNode *id)
-      : type_decl(type_decl), id(id) {}
+
+  Formal(int type_decl, IdentifierNode *id)
+      : type_decl((Type)type_decl), id(id) {}
   ~Formal() {
-    delete type_decl;
     delete id;
   }
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "formal: " << std::endl;
-    type_decl->print(os, padding + 1);
-    id->print(os, padding + 1);
+    os << get_indent(padding + 1) << "type: " << T2STR(type_decl) << std::endl;
+    os << get_indent(padding + 1) << "ID: " << std::endl;
+    id->print(os, padding + 2);
   }
 };
 
-using Formals = std::vector<Formal>;
+class Formals : public StmtNode {
+  public :
+   std::vector<Formal *> formals;
+   Formals() {}
+   ~Formals() {
+     for (Formal* f : formals)  {
+       delete f;
+     }
+   }
+   void print(std::ostream &os, const size_t padding) const override {
+     std::for_each(formals.begin(), formals.end(),
+         [&](Formal *f) { f->print(os, padding + 1); });
+   }
+};
 
 class FuncDeclNode : public StmtNode {
 public:
   IdentifierNode *name;
-  Formals formals;
-  IdentifierNode *ret_type;
-  ExpList expr;
-  FuncDeclNode(IdentifierNode *name, Formals formals, IdentifierNode* ret_type, ExpList expr )
-    : name(name), formals(formals), ret_type(ret_type), expr(expr)  { }
+  Formals *formals = nullptr;
+  Type ret_type;
+  BlockNode *block;
+  FuncDeclNode(int ret_type, IdentifierNode *name, Formals *formals, BlockNode* block )
+    : name(name), formals(formals), ret_type((Type)ret_type), block(block)  { }
 
   ~FuncDeclNode() {
     delete name;
-    std::for_each(
-        formals.begin(), formals.end(),
-        [](const  Formal *formal) { delete formal;} );
-    delete ret_type;
-    std::for_each(
-        expr.begin(), expr.end(),
-        [](const ExpNode *expr) {delete expr; });
+    delete block;
+    if (formals)  {
+      delete formals;
+    }
+
   }
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "function: " << std::endl;
@@ -164,34 +170,65 @@ public:
     name->print(os, padding + 2);
 
     os << get_indent(padding + 1) << "formals" << std::endl;
-    std::for_each(
-        formals.begin(), formals.end(),
-        [&os, padding](const Formal formal) { formal.print(os, padding + 2); });
+    formals->print(os, padding + 2);
 
-    os << get_indent(padding + 1) << "return type: " << std::endl;
-    ret_type->print(os, padding + 2);
+    os << get_indent(padding + 1) << "return type: " << T2STR(ret_type) << std::endl; os << get_indent(padding + 1) << "body: " << std::endl; block->print(os, padding + 2);
+  }
+};
 
-    os << get_indent(padding + 1) << "body: " << std::endl;
-    std::for_each(
-        expr.begin(), expr.end(),
-        [&os, padding](const ExpNode *exp) { exp->print(os, padding + 2); });
+class ReturnNode : public StmtNode {
+  public:
+    ExpNode *expr;
+    ReturnNode(ExpNode *expr = nullptr): expr(expr){}
+    ~ReturnNode() {
+      if (expr) 
+        delete expr;
+    }
+
+    void print(std::ostream &os, const size_t padding) const override {
+      os << get_indent(padding) << "return: " << std::endl;
+      expr->print(os, padding + 1);
+    }
+};
+
+class ArgsNode : public ExpNode {
+  public:
+    ExpList args ;
+    
+    ArgsNode(): args() {}
+    ~ArgsNode() {
+        std::for_each(args.begin(), args.end(),
+            [](ExpNode *e) { if (e) delete e; });
+    }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "args: " << std::endl; 
+    std::for_each(args.begin(), args.end(),
+        [&](ExpNode *e) { e->print(os, padding+1); });
   }
 };
 
 class MethodCallNode : public ExpNode {
 public:
   IdentifierNode *id = nullptr;
-  ExpList *args = nullptr;
-  MethodCallNode(IdentifierNode *id, ExpList *args = nullptr)
+  ArgsNode *args = nullptr;
+  MethodCallNode(IdentifierNode *id, ArgsNode *args = nullptr)
       : id(id), args(args) {}
   ~MethodCallNode() {
     delete id;
     if (args)
       delete args;
   }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "call method" << std::endl;
+    id->print(os, padding + 1);
+    if (args) {
+      args->print(os, padding + 1);
+    }
+  }
 };
+
 // SymRefNode is a reference of a symbol.
-// AsgNode is a node representing ':='
+// AsgNode is a node representing '='
 class AsgNode : public ExpNode {
 public:
   IdentifierNode *lhs = nullptr;
@@ -288,21 +325,22 @@ public:
   }
 };
 
-class ExpStmtNode : public StmtNode {
+class ExpStmtNode : public ExpNode, public StmtNode {
 public:
-  ExpNode *exp;
-  ExpStmtNode(ExpNode *exp) : exp(exp) {}
+  ExpNode *expr;
+  ExpStmtNode(ExpNode *expr) : expr(expr) {}
   void print(std::ostream &os, const size_t padding = 0) const override {
-    exp->print(os, padding);
+    if (expr)
+      expr->print(os, padding);
   }
-  ~ExpStmtNode() { delete exp; }
+  ~ExpStmtNode() { delete expr; }
 };
 
 class WhileNode : public StmtNode {
 public:
   ExpNode *cond;
-  BlockNode *th;
-  WhileNode(ExpNode *cond, BlockNode *th = nullptr) : cond(cond), th(th) {}
+  StmtNode *th;
+  WhileNode(ExpNode *cond, StmtNode *th = nullptr) : cond(cond), th(th) {}
   ~WhileNode() {
     delete cond;
     if (th)
@@ -318,6 +356,7 @@ public:
   }
 };
 
+/*
 class ForNode : public StmtNode {
 public:
   bool is_incr;
@@ -348,14 +387,15 @@ public:
     os << get_indent(padding + 1) << "ENDDO" << std::endl;
   }
 };
+*/
 
 class SelectNode : public StmtNode {
 public:
   ExpNode *cond = nullptr;
-  BlockNode *th = nullptr;
-  BlockNode *el = nullptr;
+  StmtNode *th = nullptr;
+  StmtNode *el = nullptr;
   SelectNode() {}
-  SelectNode(ExpNode *cond, BlockNode *th, BlockNode *el = nullptr)
+  SelectNode(ExpNode *cond, StmtNode *th, StmtNode *el = nullptr)
       : cond(cond), th(th), el(el) {}
   ~SelectNode() {
     delete cond;

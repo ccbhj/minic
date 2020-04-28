@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.5.3.
+// A Bison parser, made by GNU Bison 3.5.4.
 
 // Skeleton interface for Bison LALR(1) parsers in C++
 
@@ -32,7 +32,7 @@
 
 
 /**
- ** \file parser.h
+ ** \file parser.hh
  ** Define the ccbhj::parser class.
  */
 
@@ -41,10 +41,10 @@
 // Undocumented macros, especially those whose name start with YY_,
 // are private implementation details.  Do not rely on them.
 
-#ifndef YY_YY_PARSER_H_INCLUDED
-# define YY_YY_PARSER_H_INCLUDED
+#ifndef YY_YY_PARSER_HH_INCLUDED
+# define YY_YY_PARSER_HH_INCLUDED
 // "%code requires" blocks.
-#line 7 "parser.y"
+#line 12 "parser.y"
 
     namespace ccbhj {
         class Driver;
@@ -61,7 +61,7 @@
 # endif
 
 
-#line 65 "parser.h"
+#line 65 "parser.hh"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -191,7 +191,7 @@
 
 #line 5 "parser.y"
 namespace ccbhj {
-#line 195 "parser.h"
+#line 195 "parser.hh"
 
 
 
@@ -204,16 +204,19 @@ namespace ccbhj {
     /// Symbol semantic values.
     union semantic_type
     {
-#line 45 "parser.y"
+#line 53 "parser.y"
 
     int         TOKEN;
+    int         TYPE;
     std::string *STR;
-    class BlockNode*  BLOCK;
-    class ExpNode*    EXPR;
-    class StmtNode*   STMT;
-    class IdentifierNode* IDENT;
+    class ExpNode    *EXPR;
+    class StmtNode   *STMT;
+    class BlockNode *BLOCK;
+    class IdentifierNode *IDENT;
+    class Formals *FORMALS;
+    class ArgsNode *ARGS;
 
-#line 217 "parser.h"
+#line 220 "parser.hh"
 
     };
 #else
@@ -248,31 +251,33 @@ namespace ccbhj {
         END = 0,
         IDENTIFIER = 258,
         INT_CONST = 259,
-        ASSIGN = 260,
-        LPAREN = 261,
-        RPAREN = 262,
+        VOID = 260,
+        INT = 261,
+        ASSIGN = 262,
         SEMI = 263,
-        PLUS = 264,
-        MINUS = 265,
-        MUL = 266,
-        DIV = 267,
-        GREATER = 268,
-        LESS = 269,
-        EQUAL = 270,
-        ELESS = 271,
-        EGREATER = 272,
-        NEQUAL = 273,
-        IF = 274,
-        ELSE = 275,
-        WHILE = 276,
-        DO = 277,
-        ENDWHILE = 278,
-        FOR = 279,
-        TO = 280,
-        DOWNTO = 281,
-        ENDDO = 282,
-        NEG = 283,
-        NO_ELSE = 284
+        COMMA = 264,
+        LPAREN = 265,
+        RPAREN = 266,
+        RBRACE = 267,
+        LBRACE = 268,
+        LBRACKET = 269,
+        RBRACKET = 270,
+        PLUS = 271,
+        MINUS = 272,
+        MUL = 273,
+        DIV = 274,
+        GREATER = 275,
+        LESS = 276,
+        EQUAL = 277,
+        ELESS = 278,
+        EGREATER = 279,
+        NEQUAL = 280,
+        IF = 281,
+        ELSE = 282,
+        RETURN = 283,
+        WHILE = 284,
+        NEG = 285,
+        NO_ELSE = 286
       };
     };
 
@@ -730,10 +735,10 @@ namespace ccbhj {
     enum
     {
       yyeof_ = 0,
-      yylast_ = 300,     ///< Last index in yytable_.
-      yynnts_ = 11,  ///< Number of nonterminal symbols.
-      yyfinal_ = 42, ///< Termination state number.
-      yyntokens_ = 30  ///< Number of tokens.
+      yylast_ = 203,     ///< Last index in yytable_.
+      yynnts_ = 22,  ///< Number of nonterminal symbols.
+      yyfinal_ = 13, ///< Termination state number.
+      yyntokens_ = 32  ///< Number of tokens.
     };
 
 
@@ -744,10 +749,10 @@ namespace ccbhj {
 
 #line 5 "parser.y"
 } // ccbhj
-#line 748 "parser.h"
+#line 753 "parser.hh"
 
 
 
 
 
-#endif // !YY_YY_PARSER_H_INCLUDED
+#endif // !YY_YY_PARSER_HH_INCLUDED

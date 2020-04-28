@@ -1,6 +1,8 @@
 #ifndef TOKEN_H_
 #define TOKEN_H_
 
+#include <string>
+
 namespace ccbhj {
 // 一元符号
 enum class UaOpt {
@@ -8,7 +10,7 @@ enum class UaOpt {
 };
 
 enum class BiOpt {
-  plus = 1, // +
+  plus = 0, // +
   minus,    // -
   mul,      // *
   div,      // /
@@ -18,6 +20,13 @@ enum class BiOpt {
   greater,  // >
   eless,    // <=
   egreater, // >=
+};
+
+// 这里Type不能为enum class
+// 不然不能应用在token中
+enum Type {
+  void_ = 0,
+  int_ 
 };
 
 } // namespace ccbhj

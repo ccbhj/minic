@@ -5,13 +5,13 @@ YACC = bison
 CXXFLAGS = -W -Wall  -g -std=c++11
 LDFLAGS = 
 
-HEADERS = driver.h ast.h parser.h position.hh \
+HEADERS = driver.h tokens.h ast.h parser.hh position.hh \
 	scanner.h stack.hh tinyContext.h location.hh 
 
-all: tiny
+all: minic
 
 parser.cc: parser.y
-	$(YACC) -o parser.cc --defines=parser.h parser.y
+	$(YACC) -o parser.cc --defines=parser.hh parser.y
 
 scanner.cc: scanner.l
 	$(LEX) -o scanner.cc scanner.l
@@ -19,11 +19,16 @@ scanner.cc: scanner.l
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-tiny: main.o parser.o scanner.o driver.o
-	$(CXX) $(LDFLAGS) -o $@ main.o parser.o scanner.o driver.o
+minic: parser.o scanner.o driver.o main.o 
+	$(CXX) $(LDFLAGS) -o $@ parser.o scanner.o driver.o main.o 
 
 clean: 
-	rm -f tiny *.o 
+	rm -f minic *.o 
 
+debug:
+	$(YACC) -o parser.cc --graph=graph.out --report=solved --report-file=report.output  parser.y
+
+clean_debug:
+	rm -f graph.out 
 extraclean: clean
-	rm -f parser.cc parser.h scanner.cc
+	rm -f parser.cc parser.hh scanner.cc

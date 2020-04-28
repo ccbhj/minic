@@ -4,21 +4,21 @@
 #include <string>
 #include <iostream>
 #include "scanner.h"
-#include "parser.h"
-#include "tinyContext.h"
+#include "parser.hh"
+#include "context.h"
 
 
 namespace ccbhj {
 class Driver {
 public:
-    Driver(TinyContext* ctx)
+    Driver(Context* ctx)
         : ctx(ctx), trace_parsing(false), trace_scanning(false) {}
     virtual ~Driver();
     
     // stream name;
     std::string output;
 
-    TinyContext* ctx = nullptr;
+    Context* ctx = nullptr;
     
     // whether to generate parse debug trace info;
     bool trace_parsing;

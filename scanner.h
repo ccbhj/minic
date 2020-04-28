@@ -5,7 +5,7 @@
 #include <FlexLexer.h>
 #endif
 
-#include "parser.h"
+#include "parser.hh"
 #include "location.hh"
 
 namespace ccbhj {
