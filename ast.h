@@ -5,11 +5,13 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
+#include <llvm/IR/Value.h>
 #include <ostream>
 #include <string>
 #include <vector>
 
 #include "tokens.h"
+#include "code_gen_ctx.h"
 
 #define T2STR(t) (t == Type::int_ ? "int": "void")
 
@@ -28,6 +30,10 @@ public:
   static inline std::string get_indent(const size_t size) {
     return std::string(size * 2, ' ');
   }
+
+  // implement this to generate code for llvm
+  virtual llvm::Value* gen_code(const CodeGenContext &ctx);
+  
 };
 
 // Expression Node
