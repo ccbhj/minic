@@ -1,0 +1,38 @@
+BLOCK:
+  function: 
+    name: 
+      symbol: gcd
+    formals
+        formal: 
+          type: int
+          ID: 
+            symbol: u
+        formal: 
+          type: int
+          ID: 
+            symbol: v
+    return type: int
+    body: 
+      BLOCK:
+        IF: 
+          ==
+            symbol: v
+            int_const: 0
+        THEN: 
+          return: 
+            symbol: n
+        ELSE: 
+          return: 
+            call method
+              symbol: gcd
+              args: 
+                symbol: v
+                -
+                  symbol: u
+                  *
+                    /
+                      symbol: u
+                      symbol: v
+                    symbol: v
+      ENDBLOCK
+ENDBLOCK

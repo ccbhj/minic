@@ -1,0 +1,78 @@
+[
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I/usr/include",
+            "-std=c++14",
+            "-fno-exceptions",
+            "-D_GNU_SOURCE",
+            "-D__STDC_CONSTANT_MACROS",
+            "-D__STDC_FORMAT_MACROS",
+            "-D__STDC_LIMIT_MACROS",
+            "-fexceptions",
+            "-o",
+            "main.o",
+            "main.cc"
+        ],
+        "directory": "/home/halo/c++/minic",
+        "file": "main.cc"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I/usr/include",
+            "-std=c++14",
+            "-fno-exceptions",
+            "-D_GNU_SOURCE",
+            "-D__STDC_CONSTANT_MACROS",
+            "-D__STDC_FORMAT_MACROS",
+            "-D__STDC_LIMIT_MACROS",
+            "-fexceptions",
+            "-o",
+            "driver.o",
+            "driver.cc"
+        ],
+        "directory": "/home/halo/c++/minic",
+        "file": "driver.cc"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I/usr/include",
+            "-std=c++14",
+            "-fno-exceptions",
+            "-D_GNU_SOURCE",
+            "-D__STDC_CONSTANT_MACROS",
+            "-D__STDC_FORMAT_MACROS",
+            "-D__STDC_LIMIT_MACROS",
+            "-fexceptions",
+            "-o",
+            "scanner.o",
+            "scanner.cc"
+        ],
+        "directory": "/home/halo/c++/minic",
+        "file": "scanner.cc"
+    },
+    {
+        "arguments": [
+            "g++",
+            "-c",
+            "-I/usr/include",
+            "-std=c++14",
+            "-fno-exceptions",
+            "-D_GNU_SOURCE",
+            "-D__STDC_CONSTANT_MACROS",
+            "-D__STDC_FORMAT_MACROS",
+            "-D__STDC_LIMIT_MACROS",
+            "-fexceptions",
+            "-o",
+            "parser.o",
+            "parser.cc"
+        ],
+        "directory": "/home/halo/c++/minic",
+        "file": "parser.cc"
+    }
+]
