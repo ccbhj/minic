@@ -89,7 +89,7 @@ using std::endl;
 
 // declare non-terminal here
 %type <IDENT> id array_ref
-%type <EXPR> numeric expr comparision  
+%type <EXPR> numeric expr comparision
 %type <ARGS> args
 %type <BLOCK> program declaration_list stmt_list  compound_stmt  
 %type <STMT> declaration var_declaration func_declaration param expr_stmt stmt 

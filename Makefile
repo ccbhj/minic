@@ -7,6 +7,7 @@ CXXFLAGS = -W -Wall  -g
 HEADERS = driver.h tokens.h ast.h parser.hh position.hh \
 	scanner.h stack.hh tinyContext.h location.hh 
 
+all: minic
 parser.cc: parser.y
 	$(YACC) -o parser.cc --defines=parser.hh parser.y
 
@@ -36,4 +37,3 @@ clean_debug:
 	rm -f graph.out report.output
 extraclean: clean
 	rm -f parser.cc parser.hh scanner.cc
-
