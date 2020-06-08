@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.5.4.
+// A Bison parser, made by GNU Bison 3.6.2.
 
 // Skeleton implementation for Bison LALR(1) parsers in C++
 
@@ -30,8 +30,9 @@
 // This special exception was added by the Free Software Foundation in
 // version 2.2 of Bison.
 
-// Undocumented macros, especially those whose name start with YY_,
-// are private implementation details.  Do not rely on them.
+// DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+// especially those whose name start with YY_ or yy_.  They are
+// private implementation details that can be changed or removed.
 
 
 
@@ -58,7 +59,7 @@ using ccbhj::Type;
 using std::cout;
 using std::endl;
 
-#line 62 "parser.cc"
+#line 63 "parser.cc"
 
 
 #ifndef YY_
@@ -72,6 +73,7 @@ using std::endl;
 #  define YY_(msgid) msgid
 # endif
 #endif
+
 
 // Whether we are compiled with exception support.
 #ifndef YY_EXCEPTIONS
@@ -128,7 +130,7 @@ using std::endl;
 # define YY_STACK_PRINT()               \
   do {                                  \
     if (yydebug_)                       \
-      yystack_print_ ();                \
+      yy_stack_print_ ();                \
   } while (false)
 
 #else // !YYDEBUG
@@ -150,8 +152,7 @@ using std::endl;
 
 #line 5 "parser.y"
 namespace ccbhj {
-#line 154 "parser.cc"
-
+#line 156 "parser.cc"
 
   /// Build a parser object.
   Parser::Parser (Driver& drv_yyarg)
@@ -171,19 +172,10 @@ namespace ccbhj {
   {}
 
   /*---------------.
-  | Symbol types.  |
+  | symbol kinds.  |
   `---------------*/
 
   // basic_symbol.
-#if 201103L <= YY_CPLUSPLUS
-  template <typename Base>
-  Parser::basic_symbol<Base>::basic_symbol (basic_symbol&& that)
-    : Base (std::move (that))
-    , value (std::move (that.value))
-    , location (std::move (that.location))
-  {}
-#endif
-
   template <typename Base>
   Parser::basic_symbol<Base>::basic_symbol (const basic_symbol& that)
     : Base (that)
@@ -208,10 +200,17 @@ namespace ccbhj {
   {}
 
   template <typename Base>
+  Parser::symbol_kind_type
+  Parser::basic_symbol<Base>::type_get () const YY_NOEXCEPT
+  {
+    return this->kind ();
+  }
+
+  template <typename Base>
   bool
   Parser::basic_symbol<Base>::empty () const YY_NOEXCEPT
   {
-    return Base::type_get () == empty_symbol;
+    return this->kind () == symbol_kind::S_YYEMPTY;
   }
 
   template <typename Base>
@@ -223,44 +222,50 @@ namespace ccbhj {
     location = YY_MOVE (s.location);
   }
 
-  // by_type.
-  Parser::by_type::by_type ()
-    : type (empty_symbol)
+  // by_kind.
+  Parser::by_kind::by_kind ()
+    : kind_ (symbol_kind::S_YYEMPTY)
   {}
 
 #if 201103L <= YY_CPLUSPLUS
-  Parser::by_type::by_type (by_type&& that)
-    : type (that.type)
+  Parser::by_kind::by_kind (by_kind&& that)
+    : kind_ (that.kind_)
   {
     that.clear ();
   }
 #endif
 
-  Parser::by_type::by_type (const by_type& that)
-    : type (that.type)
+  Parser::by_kind::by_kind (const by_kind& that)
+    : kind_ (that.kind_)
   {}
 
-  Parser::by_type::by_type (token_type t)
-    : type (yytranslate_ (t))
+  Parser::by_kind::by_kind (token_kind_type t)
+    : kind_ (yytranslate_ (t))
   {}
 
   void
-  Parser::by_type::clear ()
+  Parser::by_kind::clear ()
   {
-    type = empty_symbol;
+    kind_ = symbol_kind::S_YYEMPTY;
   }
 
   void
-  Parser::by_type::move (by_type& that)
+  Parser::by_kind::move (by_kind& that)
   {
-    type = that.type;
+    kind_ = that.kind_;
     that.clear ();
   }
 
-  int
-  Parser::by_type::type_get () const YY_NOEXCEPT
+  Parser::symbol_kind_type
+  Parser::by_kind::kind () const YY_NOEXCEPT
   {
-    return type;
+    return kind_;
+  }
+
+  Parser::symbol_kind_type
+  Parser::by_kind::type_get () const YY_NOEXCEPT
+  {
+    return this->kind ();
   }
 
 
@@ -290,13 +295,13 @@ namespace ccbhj {
     : state (s)
   {}
 
-  Parser::symbol_number_type
-  Parser::by_state::type_get () const YY_NOEXCEPT
+  Parser::symbol_kind_type
+  Parser::by_state::kind () const YY_NOEXCEPT
   {
     if (state == empty_state)
-      return empty_symbol;
+      return symbol_kind::S_YYEMPTY;
     else
-      return yystos_[+state];
+      return YY_CAST (symbol_kind_type, yystos_[+state]);
   }
 
   Parser::stack_symbol_type::stack_symbol_type ()
@@ -315,7 +320,7 @@ namespace ccbhj {
     : super_type (s, YY_MOVE (that.value), YY_MOVE (that.location))
   {
     // that is emptied.
-    that.type = empty_symbol;
+    that.kind_ = symbol_kind::S_YYEMPTY;
   }
 
 #if YY_CPLUSPLUS < 201103L
@@ -348,29 +353,27 @@ namespace ccbhj {
       YY_SYMBOL_PRINT (yymsg, yysym);
 
     // User destructor.
-    YYUSE (yysym.type_get ());
+    YYUSE (yysym.kind ());
   }
 
 #if YYDEBUG
   template <typename Base>
   void
-  Parser::yy_print_ (std::ostream& yyo,
-                                     const basic_symbol<Base>& yysym) const
+  Parser::yy_print_ (std::ostream& yyo, const basic_symbol<Base>& yysym) const
   {
     std::ostream& yyoutput = yyo;
     YYUSE (yyoutput);
-    symbol_number_type yytype = yysym.type_get ();
-#if defined __GNUC__ && ! defined __clang__ && ! defined __ICC && __GNUC__ * 100 + __GNUC_MINOR__ <= 408
-    // Avoid a (spurious) G++ 4.8 warning about "array subscript is
-    // below array bounds".
     if (yysym.empty ())
-      std::abort ();
-#endif
-    yyo << (yytype < yyntokens_ ? "token" : "nterm")
-        << ' ' << yytname_[yytype] << " ("
-        << yysym.location << ": ";
-    YYUSE (yytype);
-    yyo << ')';
+      yyo << "empty symbol";
+    else
+      {
+        symbol_kind_type yykind = yysym.kind ();
+        yyo << (yykind < YYNTOKENS ? "token" : "nterm")
+            << ' ' << yysym.name () << " ("
+            << yysym.location << ": ";
+        YYUSE (yykind);
+        yyo << ')';
+      }
   }
 #endif
 
@@ -429,11 +432,11 @@ namespace ccbhj {
   Parser::state_type
   Parser::yy_lr_goto_state_ (state_type yystate, int yysym)
   {
-    int yyr = yypgoto_[yysym - yyntokens_] + yystate;
+    int yyr = yypgoto_[yysym - YYNTOKENS] + yystate;
     if (0 <= yyr && yyr <= yylast_ && yycheck_[yyr] == yystate)
       return yytable_[yyr];
     else
-      return yydefgoto_[yysym - yyntokens_];
+      return yydefgoto_[yysym - YYNTOKENS];
   }
 
   bool
@@ -487,7 +490,7 @@ namespace ccbhj {
     yyla.location.begin.filename = yyla.location.end.filename = &drv.output;
 }
 
-#line 491 "parser.cc"
+#line 494 "parser.cc"
 
 
     /* Initialize the stack.  The initial state will be set in
@@ -502,6 +505,7 @@ namespace ccbhj {
   `-----------------------------------------------*/
   yynewstate:
     YYCDEBUG << "Entering state " << int (yystack_[0].state) << '\n';
+    YY_STACK_PRINT ();
 
     // Accept?
     if (yystack_[0].state == yyfinal_)
@@ -522,12 +526,12 @@ namespace ccbhj {
     // Read a lookahead token.
     if (yyla.empty ())
       {
-        YYCDEBUG << "Reading a token: ";
+        YYCDEBUG << "Reading a token\n";
 #if YY_EXCEPTIONS
         try
 #endif // YY_EXCEPTIONS
           {
-            yyla.type = yytranslate_ (yylex (&yyla.value, &yyla.location));
+            yyla.kind_ = yytranslate_ (yylex (&yyla.value, &yyla.location));
           }
 #if YY_EXCEPTIONS
         catch (const syntax_error& yyexc)
@@ -540,10 +544,20 @@ namespace ccbhj {
       }
     YY_SYMBOL_PRINT ("Next token is", yyla);
 
+    if (yyla.kind () == symbol_kind::S_YYerror)
+    {
+      // The scanner already issued an error message, process directly
+      // to error recovery.  But do not keep the error token as
+      // lookahead, it is too special and may lead us to an endless
+      // loop in error recovery. */
+      yyla.kind_ = symbol_kind::S_YYUNDEF;
+      goto yyerrlab1;
+    }
+
     /* If the proper action on seeing token YYLA.TYPE is to reduce or
        to detect an error, take that action.  */
-    yyn += yyla.type_get ();
-    if (yyn < 0 || yylast_ < yyn || yycheck_[yyn] != yyla.type_get ())
+    yyn += yyla.kind ();
+    if (yyn < 0 || yylast_ < yyn || yycheck_[yyn] != yyla.kind ())
       {
         goto yydefault;
       }
@@ -614,519 +628,371 @@ namespace ccbhj {
   case 2:
 #line 107 "parser.y"
                           { drv.ctx->programBlock = (yystack_[0].value.BLOCK); }
-#line 618 "parser.cc"
+#line 632 "parser.cc"
     break;
 
   case 3:
 #line 108 "parser.y"
                 { cout << "empty file to parse" << endl; }
-#line 624 "parser.cc"
+#line 638 "parser.cc"
     break;
 
   case 4:
 #line 111 "parser.y"
                { (yylhs.value.IDENT) = new IdentifierNode((yystack_[0].value.STR)); }
-#line 630 "parser.cc"
+#line 644 "parser.cc"
     break;
 
   case 5:
 #line 115 "parser.y"
                                {    (yylhs.value.BLOCK) = new BlockNode(); (yylhs.value.BLOCK)->statements.push_back((yystack_[0].value.STMT)); }
-#line 636 "parser.cc"
+#line 650 "parser.cc"
     break;
 
   case 6:
 #line 116 "parser.y"
                                                    { (yylhs.value.BLOCK)->statements.push_back((yystack_[0].value.STMT)); }
-#line 642 "parser.cc"
+#line 656 "parser.cc"
     break;
 
   case 7:
 #line 119 "parser.y"
                               { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-#line 648 "parser.cc"
+#line 662 "parser.cc"
     break;
 
   case 8:
 #line 120 "parser.y"
                                { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-#line 654 "parser.cc"
+#line 668 "parser.cc"
     break;
 
   case 9:
 #line 123 "parser.y"
                                   { (yylhs.value.STMT) = new Formal((yystack_[2].value.TYPE), (yystack_[1].value.IDENT));}
-#line 660 "parser.cc"
+#line 674 "parser.cc"
     break;
 
   case 10:
 #line 124 "parser.y"
                                                          { (yylhs.value.STMT) = new ArrayFormal((yystack_[5].value.TYPE), (yystack_[4].value.IDENT), (yystack_[2].value.EXPR)); }
-#line 666 "parser.cc"
+#line 680 "parser.cc"
     break;
 
   case 11:
 #line 128 "parser.y"
               { (yylhs.value.TYPE) = Type::int_; }
-#line 672 "parser.cc"
+#line 686 "parser.cc"
     break;
 
   case 12:
 #line 131 "parser.y"
                                                              { (yylhs.value.STMT) = new FuncDeclNode(Type::void_, (yystack_[4].value.IDENT), (yystack_[2].value.FORMALS), (yystack_[0].value.BLOCK)); }
-#line 678 "parser.cc"
+#line 692 "parser.cc"
     break;
 
   case 13:
 #line 132 "parser.y"
                                                                  { (yylhs.value.STMT) = new FuncDeclNode((yystack_[5].value.TYPE), (yystack_[4].value.IDENT), (yystack_[2].value.FORMALS), (yystack_[0].value.BLOCK)); }
-#line 684 "parser.cc"
+#line 698 "parser.cc"
     break;
 
   case 14:
 #line 133 "parser.y"
                                                           { cout << "invalid return type" << endl; yyerrok; }
-#line 690 "parser.cc"
+#line 704 "parser.cc"
     break;
 
   case 15:
 #line 137 "parser.y"
                { /* no param */ (yylhs.value.FORMALS) = nullptr;}
-#line 696 "parser.cc"
+#line 710 "parser.cc"
     break;
 
   case 16:
 #line 138 "parser.y"
              { (yylhs.value.FORMALS) = nullptr;}
-#line 702 "parser.cc"
+#line 716 "parser.cc"
     break;
 
   case 17:
 #line 139 "parser.y"
         { (yylhs.value.FORMALS) = (yystack_[0].value.FORMALS); }
-#line 708 "parser.cc"
+#line 722 "parser.cc"
     break;
 
   case 18:
 #line 142 "parser.y"
                   { (yylhs.value.FORMALS) = new Formals(); (yylhs.value.FORMALS)->formals.push_back(static_cast<Formal*>((yystack_[0].value.STMT))); }
-#line 714 "parser.cc"
+#line 728 "parser.cc"
     break;
 
   case 19:
 #line 143 "parser.y"
                                    { (yystack_[2].value.FORMALS)->formals.push_back(static_cast<Formal*>((yystack_[0].value.STMT))); }
-#line 720 "parser.cc"
+#line 734 "parser.cc"
     break;
 
   case 20:
 #line 147 "parser.y"
                    { (yylhs.value.STMT) = new Formal((yystack_[1].value.TYPE), (yystack_[0].value.IDENT)); }
-#line 726 "parser.cc"
+#line 740 "parser.cc"
     break;
 
   case 21:
 #line 148 "parser.y"
                                      {(yylhs.value.STMT) = new ArrayFormal((yystack_[3].value.TYPE), (yystack_[2].value.IDENT)); }
-#line 732 "parser.cc"
+#line 746 "parser.cc"
     break;
 
   case 22:
 #line 152 "parser.y"
                                         { (yylhs.value.BLOCK) = (yystack_[1].value.BLOCK); }
-#line 738 "parser.cc"
+#line 752 "parser.cc"
     break;
 
   case 23:
 #line 153 "parser.y"
                                               { (yylhs.value.BLOCK) = nullptr;}
-#line 744 "parser.cc"
+#line 758 "parser.cc"
     break;
 
   case 24:
 #line 156 "parser.y"
                 { (yylhs.value.BLOCK) = new BlockNode(); (yylhs.value.BLOCK)->statements.push_back((yystack_[0].value.STMT)); }
-#line 750 "parser.cc"
+#line 764 "parser.cc"
     break;
 
   case 25:
 #line 157 "parser.y"
                           { (yystack_[1].value.BLOCK)->statements.push_back((yystack_[0].value.STMT)); }
-#line 756 "parser.cc"
+#line 770 "parser.cc"
     break;
 
   case 26:
 #line 160 "parser.y"
       { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-#line 762 "parser.cc"
+#line 776 "parser.cc"
     break;
 
   case 27:
 #line 161 "parser.y"
         { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-#line 768 "parser.cc"
+#line 782 "parser.cc"
     break;
 
   case 28:
 #line 162 "parser.y"
                       { (yylhs.value.STMT) = (yystack_[0].value.BLOCK);  }
-#line 774 "parser.cc"
+#line 788 "parser.cc"
     break;
 
   case 29:
 #line 163 "parser.y"
         { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-#line 780 "parser.cc"
+#line 794 "parser.cc"
     break;
 
   case 30:
 #line 164 "parser.y"
         { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-#line 786 "parser.cc"
+#line 800 "parser.cc"
     break;
 
   case 31:
-<<<<<<< HEAD
 #line 165 "parser.y"
         { (yylhs.value.STMT) = (yystack_[0].value.STMT); }
-=======
-#line 167 "parser.y"
-                                                         {(yylhs.value.STMT) = new SelectNode((yystack_[2].value.EXPR), (yystack_[0].value.STMT)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 792 "parser.cc"
+#line 806 "parser.cc"
     break;
 
   case 32:
-<<<<<<< HEAD
 #line 169 "parser.y"
                                                          {(yylhs.value.STMT) = new SelectNode((yystack_[2].value.EXPR), (yystack_[0].value.STMT)); }
-=======
-#line 168 "parser.y"
-                                           {(yylhs.value.STMT) = new SelectNode((yystack_[4].value.EXPR), (yystack_[2].value.STMT), (yystack_[0].value.STMT)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 798 "parser.cc"
+#line 812 "parser.cc"
     break;
 
   case 33:
-<<<<<<< HEAD
 #line 170 "parser.y"
                                            {(yylhs.value.STMT) = new SelectNode((yystack_[4].value.EXPR), (yystack_[2].value.STMT), (yystack_[0].value.STMT)); }
-=======
-#line 171 "parser.y"
-                     { (yylhs.value.STMT) = new ExpStmtNode((yystack_[1].value.EXPR)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 804 "parser.cc"
+#line 818 "parser.cc"
     break;
 
   case 34:
-<<<<<<< HEAD
 #line 173 "parser.y"
                      { (yylhs.value.STMT) = new ExpStmtNode((yystack_[1].value.EXPR)); }
-=======
-#line 172 "parser.y"
-               { (yylhs.value.STMT) = nullptr; }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 810 "parser.cc"
+#line 824 "parser.cc"
     break;
 
   case 35:
-<<<<<<< HEAD
 #line 174 "parser.y"
                { (yylhs.value.STMT) = nullptr; }
-=======
-#line 175 "parser.y"
-                                                       { (yylhs.value.STMT) = new WhileNode((yystack_[2].value.EXPR), (yystack_[0].value.BLOCK)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 816 "parser.cc"
+#line 830 "parser.cc"
     break;
 
   case 36:
-<<<<<<< HEAD
 #line 177 "parser.y"
                                               { (yylhs.value.STMT) = new WhileNode((yystack_[2].value.EXPR), (yystack_[0].value.STMT)); }
-=======
-#line 178 "parser.y"
-                          { (yylhs.value.STMT) = new ReturnNode(); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 822 "parser.cc"
+#line 836 "parser.cc"
     break;
 
   case 37:
-<<<<<<< HEAD
 #line 180 "parser.y"
                           { (yylhs.value.STMT) = new ReturnNode(); }
-=======
-#line 179 "parser.y"
-                              { (yylhs.value.STMT) = new ReturnNode((yystack_[1].value.EXPR)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 828 "parser.cc"
+#line 842 "parser.cc"
     break;
 
   case 38:
-<<<<<<< HEAD
 #line 181 "parser.y"
                               { (yylhs.value.STMT) = new ReturnNode((yystack_[1].value.EXPR)); }
-=======
-#line 182 "parser.y"
-      { (yylhs.value.EXPR) = (yystack_[0].value.EXPR); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 834 "parser.cc"
+#line 848 "parser.cc"
     break;
 
   case 39:
-<<<<<<< HEAD
 #line 184 "parser.y"
       { (yylhs.value.EXPR) = (yystack_[0].value.EXPR); }
-=======
-#line 183 "parser.y"
-                             { (yylhs.value.EXPR) = (yystack_[1].value.EXPR);}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 840 "parser.cc"
+#line 854 "parser.cc"
     break;
 
   case 40:
-<<<<<<< HEAD
 #line 185 "parser.y"
                              { (yylhs.value.EXPR) = (yystack_[1].value.EXPR);}
-=======
-#line 184 "parser.y"
-                             { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::plus, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 846 "parser.cc"
+#line 860 "parser.cc"
     break;
 
   case 41:
-<<<<<<< HEAD
 #line 186 "parser.y"
                              { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::plus, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 185 "parser.y"
-                             { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::minus, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 852 "parser.cc"
+#line 866 "parser.cc"
     break;
 
   case 42:
-<<<<<<< HEAD
 #line 187 "parser.y"
                              { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::minus, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 186 "parser.y"
-                             { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::mul, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 858 "parser.cc"
+#line 872 "parser.cc"
     break;
 
   case 43:
-<<<<<<< HEAD
 #line 188 "parser.y"
                              { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::mul, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 187 "parser.y"
-                             { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::div, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 864 "parser.cc"
+#line 878 "parser.cc"
     break;
 
   case 44:
-<<<<<<< HEAD
 #line 189 "parser.y"
                              { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::div, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 188 "parser.y"
-                             { (yylhs.value.EXPR) = new UnaryOperator(UaOpt::neg, (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 870 "parser.cc"
+#line 884 "parser.cc"
     break;
 
   case 45:
-<<<<<<< HEAD
 #line 190 "parser.y"
                              { (yylhs.value.EXPR) = new UnaryOperator(UaOpt::neg, (yystack_[0].value.EXPR));}
-=======
-#line 189 "parser.y"
-                             { (yylhs.value.EXPR) = new AsgNode((yystack_[2].value.IDENT), (yystack_[0].value.EXPR)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 876 "parser.cc"
+#line 890 "parser.cc"
     break;
 
   case 46:
-<<<<<<< HEAD
 #line 191 "parser.y"
                              { (yylhs.value.EXPR) = new AsgNode((yystack_[2].value.IDENT), (yystack_[0].value.EXPR)); }
-=======
-#line 190 "parser.y"
-                             { (yylhs.value.EXPR) = new MethodCallNode((yystack_[3].value.IDENT), (yystack_[1].value.ARGS)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 882 "parser.cc"
+#line 896 "parser.cc"
     break;
 
   case 47:
-<<<<<<< HEAD
 #line 192 "parser.y"
                              { (yylhs.value.EXPR) = new MethodCallNode((yystack_[3].value.IDENT), (yystack_[1].value.ARGS)); }
-=======
-#line 191 "parser.y"
-                                { /* TODO  array */ }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 888 "parser.cc"
+#line 902 "parser.cc"
     break;
 
   case 48:
-<<<<<<< HEAD
 #line 193 "parser.y"
                              { (yylhs.value.EXPR) = new AsgNode((yystack_[2].value.IDENT), (yystack_[0].value.EXPR));}
-=======
-#line 192 "parser.y"
-      { (yylhs.value.EXPR) = (yystack_[0].value.EXPR); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 894 "parser.cc"
+#line 908 "parser.cc"
     break;
 
   case 49:
-<<<<<<< HEAD
 #line 194 "parser.y"
       { (yylhs.value.EXPR) = (yystack_[0].value.EXPR); }
-=======
-#line 193 "parser.y"
-                             { (yylhs.value.EXPR) = (yystack_[0].value.IDENT); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 900 "parser.cc"
+#line 914 "parser.cc"
     break;
 
   case 50:
-<<<<<<< HEAD
 #line 195 "parser.y"
                              { (yylhs.value.EXPR) = (yystack_[0].value.EXPR);}
-=======
-#line 196 "parser.y"
-                                             { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::less, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 906 "parser.cc"
+#line 920 "parser.cc"
     break;
 
   case 51:
-<<<<<<< HEAD
 #line 196 "parser.y"
                              { (yylhs.value.EXPR) = (yystack_[0].value.IDENT); }
-=======
-#line 197 "parser.y"
-                                      { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::greater,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 912 "parser.cc"
+#line 926 "parser.cc"
     break;
 
   case 52:
-<<<<<<< HEAD
 #line 199 "parser.y"
                                               { (yylhs.value.IDENT) = new ArrayRef((yystack_[3].value.STR), (yystack_[1].value.EXPR)); }
-=======
-#line 198 "parser.y"
-                                      { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::equal,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 918 "parser.cc"
+#line 932 "parser.cc"
     break;
 
   case 53:
-<<<<<<< HEAD
 #line 201 "parser.y"
                                       { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::less, (yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 199 "parser.y"
-                                      { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::nequal,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 924 "parser.cc"
+#line 938 "parser.cc"
     break;
 
   case 54:
-<<<<<<< HEAD
 #line 202 "parser.y"
                                       { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::greater,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 200 "parser.y"
-                                      { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::eless,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 930 "parser.cc"
+#line 944 "parser.cc"
     break;
 
   case 55:
-<<<<<<< HEAD
 #line 203 "parser.y"
                                       { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::equal,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 201 "parser.y"
-                                      { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::egreater ,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 936 "parser.cc"
+#line 950 "parser.cc"
     break;
 
   case 56:
 #line 204 "parser.y"
-<<<<<<< HEAD
                                       { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::nequal,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-                    { (yylhs.value.EXPR) = new NumNode(std::stoi(*(yystack_[0].value.STR))); delete (yystack_[0].value.STR); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 942 "parser.cc"
+#line 956 "parser.cc"
     break;
 
   case 57:
-<<<<<<< HEAD
 #line 205 "parser.y"
                                       { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::eless,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 207 "parser.y"
-             { (yylhs.value.ARGS) = nullptr; }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 948 "parser.cc"
+#line 962 "parser.cc"
     break;
 
   case 58:
-<<<<<<< HEAD
 #line 206 "parser.y"
                                       { (yylhs.value.EXPR) = new BinaryOperator(BiOpt::egreater ,(yystack_[2].value.EXPR), (yystack_[0].value.EXPR));}
-=======
-#line 208 "parser.y"
-            { (yylhs.value.ARGS) = new ArgsNode(); (yylhs.value.ARGS)->args.push_back((yystack_[0].value.EXPR)); }
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
-#line 954 "parser.cc"
+#line 968 "parser.cc"
     break;
 
   case 59:
 #line 209 "parser.y"
-<<<<<<< HEAD
                     { (yylhs.value.EXPR) = new NumNode(std::stoi(*(yystack_[0].value.STR))); delete (yystack_[0].value.STR); }
-#line 960 "parser.cc"
+#line 974 "parser.cc"
     break;
 
   case 60:
 #line 212 "parser.y"
              { (yylhs.value.ARGS) = nullptr; }
-#line 966 "parser.cc"
+#line 980 "parser.cc"
     break;
 
   case 61:
 #line 213 "parser.y"
             { (yylhs.value.ARGS) = new ArgsNode(); (yylhs.value.ARGS)->args.push_back((yystack_[0].value.EXPR)); }
-#line 972 "parser.cc"
+#line 986 "parser.cc"
     break;
 
   case 62:
 #line 214 "parser.y"
                       { (yystack_[2].value.ARGS)->args.push_back((yystack_[0].value.EXPR)); }
-#line 978 "parser.cc"
+#line 992 "parser.cc"
     break;
 
 
-#line 982 "parser.cc"
-=======
-                      { (yystack_[2].value.ARGS)->args.push_back((yystack_[0].value.EXPR)); }
-#line 960 "parser.cc"
-    break;
-
-
-#line 964 "parser.cc"
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
+#line 996 "parser.cc"
 
             default:
               break;
@@ -1143,7 +1009,6 @@ namespace ccbhj {
       YY_SYMBOL_PRINT ("-> $$ =", yylhs);
       yypop_ (yylen);
       yylen = 0;
-      YY_STACK_PRINT ();
 
       // Shift the result of the reduction.
       yypush_ (YY_NULLPTR, YY_MOVE (yylhs));
@@ -1159,7 +1024,8 @@ namespace ccbhj {
     if (!yyerrstatus_)
       {
         ++yynerrs_;
-        error (yyla.location, yysyntax_error_ (yystack_[0].state, yyla));
+        std::string msg = YY_("syntax error");
+        error (yyla.location, YY_MOVE (msg));
       }
 
 
@@ -1170,7 +1036,7 @@ namespace ccbhj {
            error, discard it.  */
 
         // Return failure if at end of input.
-        if (yyla.type_get () == yyeof_)
+        if (yyla.kind () == symbol_kind::S_YYEOF)
           YYABORT;
         else if (!yyla.empty ())
           {
@@ -1196,6 +1062,7 @@ namespace ccbhj {
        this YYERROR.  */
     yypop_ (yylen);
     yylen = 0;
+    YY_STACK_PRINT ();
     goto yyerrlab1;
 
 
@@ -1204,31 +1071,33 @@ namespace ccbhj {
   `-------------------------------------------------------------*/
   yyerrlab1:
     yyerrstatus_ = 3;   // Each real token shifted decrements this.
+    // Pop stack until we find a state that shifts the error token.
+    for (;;)
+      {
+        yyn = yypact_[+yystack_[0].state];
+        if (!yy_pact_value_is_default_ (yyn))
+          {
+            yyn += symbol_kind::S_YYerror;
+            if (0 <= yyn && yyn <= yylast_
+                && yycheck_[yyn] == symbol_kind::S_YYerror)
+              {
+                yyn = yytable_[yyn];
+                if (0 < yyn)
+                  break;
+              }
+          }
+
+        // Pop the current state because it cannot handle the error token.
+        if (yystack_.size () == 1)
+          YYABORT;
+
+        yyerror_range[1].location = yystack_[0].location;
+        yy_destroy_ ("Error: popping", yystack_[0]);
+        yypop_ ();
+        YY_STACK_PRINT ();
+      }
     {
       stack_symbol_type error_token;
-      for (;;)
-        {
-          yyn = yypact_[+yystack_[0].state];
-          if (!yy_pact_value_is_default_ (yyn))
-            {
-              yyn += yy_error_token_;
-              if (0 <= yyn && yyn <= yylast_ && yycheck_[yyn] == yy_error_token_)
-                {
-                  yyn = yytable_[yyn];
-                  if (0 < yyn)
-                    break;
-                }
-            }
-
-          // Pop the current state because it cannot handle the error token.
-          if (yystack_.size () == 1)
-            YYABORT;
-
-          yyerror_range[1].location = yystack_[0].location;
-          yy_destroy_ ("Error: popping", yystack_[0]);
-          yypop_ ();
-          YY_STACK_PRINT ();
-        }
 
       yyerror_range[2].location = yyla.location;
       YYLLOC_DEFAULT (error_token.location, yyerror_range, 2);
@@ -1266,6 +1135,7 @@ namespace ccbhj {
     /* Do not reclaim the symbols of the rule whose action triggered
        this YYABORT or YYACCEPT.  */
     yypop_ (yylen);
+    YY_STACK_PRINT ();
     while (1 < yystack_.size ())
       {
         yy_destroy_ ("Cleanup: popping", yystack_[0]);
@@ -1299,26 +1169,25 @@ namespace ccbhj {
     error (yyexc.location, yyexc.what ());
   }
 
-  // Generate an error message.
-  std::string
-  Parser::yysyntax_error_ (state_type, const symbol_type&) const
+#if YYDEBUG || 0
+  const char *
+  Parser::symbol_name (symbol_kind_type yysymbol)
   {
-    return YY_("syntax error");
+    return yytname_[yysymbol];
   }
+#endif // #if YYDEBUG || 0
 
 
-<<<<<<< HEAD
+
+
+
   const signed char Parser::yypact_ninf_ = -68;
-=======
-  const signed char Parser::yypact_ninf_ = -47;
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
 
   const signed char Parser::yytable_ninf_ = -4;
 
   const short
   Parser::yypact_[] =
   {
-<<<<<<< HEAD
       50,    -8,    14,   -68,     9,    53,   -68,   -68,    14,   -68,
       15,   -68,    38,   -68,   -68,     6,    14,    46,    69,   -68,
       69,     2,    47,    56,   -68,    67,    78,   -68,    81,    80,
@@ -1331,20 +1200,6 @@ namespace ccbhj {
       64,    64,    64,    64,    64,    64,   228,     2,   -68,   136,
        2,    57,   -68,   -68,   -68,   -68,     2,   -68,   166,   -68,
      181,   228,   104,   104,    82,   -68,   104,   -68
-=======
-     100,    -6,    45,   -47,    47,   103,   -47,   -47,    45,   -47,
-      50,   -47,    40,   -47,   -47,   118,    45,    46,    20,   -47,
-      20,    55,    51,    60,   -47,    63,    73,   -47,    66,   -47,
-      69,    72,    41,   -47,    60,    50,    60,    83,   -47,   -47,
-     155,   -47,   155,    82,    58,    86,    76,   -47,    68,   -47,
-     -47,   -47,   -47,   -47,    99,   -47,   -47,   -47,   -47,   -47,
-     -47,    -2,   -47,   155,   -47,   117,   155,   155,   155,   155,
-     -47,   -47,   -47,   155,   155,   155,   155,   155,   155,   155,
-     155,   155,   155,   -47,   132,   -47,   157,   178,   178,    -1,
-     168,    14,    14,   -47,   -47,   128,   128,   128,   128,   128,
-     128,    85,    60,   155,   -47,   -47,   102,   -47,   178,    85,
-     -47
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
@@ -1352,7 +1207,6 @@ namespace ccbhj {
   {
        0,     0,     0,    11,     0,     0,     5,     7,     0,     8,
        0,     4,     0,     1,     6,     0,     0,     0,    15,     9,
-<<<<<<< HEAD
       15,     0,    20,     0,    16,     0,    17,    18,     0,     4,
       59,     0,     0,    51,     0,    50,    39,    49,     0,     0,
       14,     0,     0,     0,     0,     0,    45,     0,    60,     0,
@@ -1363,52 +1217,27 @@ namespace ccbhj {
       54,    53,    55,    57,    58,    56,    48,     0,    37,     0,
        0,     0,    22,    25,    34,    52,     0,    47,     0,    38,
        0,    62,     0,     0,    32,    36,     0,    33
-=======
-      15,     0,    20,     0,    16,     0,    17,    18,     0,    56,
-       0,     0,     0,    14,     0,     0,     0,     0,    21,    34,
-       0,    23,     0,     0,     0,     0,    49,    27,     0,    24,
-      28,    26,    29,    30,     0,    38,    48,    12,    19,    13,
-      10,     0,    44,     0,    36,     0,     0,     0,    57,     0,
-      22,    25,    33,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,    39,     0,    37,     0,    45,    58,     0,
-       0,    40,    41,    42,    43,    51,    50,    52,    54,    55,
-      53,     0,     0,     0,    46,    47,    31,    35,    59,     0,
-      32
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
   Parser::yypgoto_[] =
   {
-<<<<<<< HEAD
      -68,   -68,    -1,   -68,   106,    13,    42,   -68,    98,   -68,
       -2,   -19,   -68,   -67,   -68,   -68,   -68,   -68,   -21,   -68,
      -68,   -68,   -68
-=======
-     -47,   -47,    44,   -47,   105,   -47,     7,   -47,    92,   -47,
-      -4,   -23,   -47,   -46,   -47,   -47,   -47,   -47,   -39,   -47,
-     106,   -47
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
   Parser::yydefgoto_[] =
   {
-<<<<<<< HEAD
       -1,     4,    33,     5,     6,    67,    68,     9,    25,    26,
       27,    69,    70,    71,    72,    73,    74,    75,    76,    35,
       36,    37,    84
-=======
-      -1,     4,    46,     5,     6,     7,    16,     9,    25,    26,
-      27,    47,    48,    49,    50,    51,    52,    53,    54,    55,
-      56,    89
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
   Parser::yytable_[] =
   {
-<<<<<<< HEAD
       34,    12,    10,   103,    40,    29,    30,    15,    17,    13,
       45,    46,    31,     7,    19,    22,    20,    11,     7,    32,
       21,     3,    77,    80,    79,    47,    82,    83,    48,    86,
@@ -1435,35 +1264,11 @@ namespace ccbhj {
       57,    58,    59,   105,    50,    51,    52,    53,    54,    55,
       56,    57,    58,    59,    50,    51,    52,    53,    54,    55,
       56,    57,    58,    59
-=======
-      33,    61,    71,    62,    10,    65,    17,     8,   103,    83,
-     104,    57,     8,    59,    73,    74,    75,    76,    77,    78,
-      79,    80,    81,    82,    84,    24,     3,    86,    87,    88,
-      90,    58,    75,    76,    91,    92,    93,    94,    95,    96,
-      97,    98,    99,   100,    11,    29,    12,    13,    11,    39,
-      18,    40,    15,    41,    32,   106,     3,    23,    42,    29,
-      22,    11,    29,   110,   108,    31,    64,    43,    40,    44,
-      45,    11,    29,    32,    34,    42,    39,    36,    40,   107,
-      70,    32,    35,    67,    37,    42,    68,    38,    11,    29,
-      69,    60,    63,    39,    43,    40,    44,    45,    32,    66,
-      -3,     1,    42,    -2,     1,     2,     3,    72,     2,     3,
-      14,    43,    28,    44,    45,    73,    74,    75,    76,    77,
-      78,    79,    80,    81,    82,    85,    19,    30,    20,   109,
-       0,     0,    21,    73,    74,    75,    76,    77,    78,    79,
-      80,    81,    82,   101,    73,    74,    75,    76,    73,    74,
-      75,    76,    77,    78,    79,    80,    81,    82,    11,    29,
-       0,     0,     0,     0,     0,    40,     0,     0,     0,   102,
-       0,     0,    42,    73,    74,    75,    76,    77,    78,    79,
-      80,    81,    82,   105,    73,    74,    75,    76,    77,    78,
-      79,    80,    81,    82,    73,    74,    75,    76,    77,    78,
-      79,    80,    81,    82
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
   Parser::yycheck_[] =
   {
-<<<<<<< HEAD
       21,     2,    10,    70,    23,     3,     4,     8,    10,     0,
       31,    32,    10,     0,     8,    16,    10,     3,     5,    17,
       14,     6,    41,    44,    43,     7,    47,    48,    10,    50,
@@ -1487,26 +1292,6 @@ namespace ccbhj {
       19,    20,    21,    22,    23,    24,    25,     3,     4,    -1,
       -1,    -1,     8,    -1,    10,    -1,    -1,    -1,    -1,    -1,
       -1,    17,    15,    16,    17,    18,    19,    20,    21,    22,
-=======
-      23,    40,    48,    42,    10,    44,    10,     0,     9,    11,
-      11,    34,     5,    36,    16,    17,    18,    19,    20,    21,
-      22,    23,    24,    25,    63,     5,     6,    66,    67,    68,
-      69,    35,    18,    19,    73,    74,    75,    76,    77,    78,
-      79,    80,    81,    82,     3,     4,     2,     0,     3,     8,
-      10,    10,     8,    12,    13,   101,     6,    11,    17,     4,
-      16,     3,     4,   109,   103,    14,     8,    26,    10,    28,
-      29,     3,     4,    13,    11,    17,     8,    11,    10,   102,
-      12,    13,     9,     7,    15,    17,    10,    15,     3,     4,
-      14,     8,    10,     8,    26,    10,    28,    29,    13,    13,
-       0,     1,    17,     0,     1,     5,     6,     8,     5,     6,
-       5,    26,    20,    28,    29,    16,    17,    18,    19,    20,
-      21,    22,    23,    24,    25,     8,     8,    21,    10,    27,
-      -1,    -1,    14,    16,    17,    18,    19,    20,    21,    22,
-      23,    24,    25,    11,    16,    17,    18,    19,    16,    17,
-      18,    19,    20,    21,    22,    23,    24,    25,     3,     4,
-      -1,    -1,    -1,    -1,    -1,    10,    -1,    -1,    -1,    12,
-      -1,    -1,    17,    16,    17,    18,    19,    20,    21,    22,
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
       23,    24,    25,    15,    16,    17,    18,    19,    20,    21,
       22,    23,    24,    25,    16,    17,    18,    19,    20,    21,
       22,    23,    24,    25
@@ -1517,7 +1302,6 @@ namespace ccbhj {
   {
        0,     1,     5,     6,    33,    35,    36,    37,    38,    39,
       10,     3,    34,     0,    36,    34,    38,    42,    10,     8,
-<<<<<<< HEAD
       10,    14,    34,    11,     5,    40,    41,    42,    40,     3,
        4,    10,    17,    34,    50,    51,    52,    53,    14,    13,
       43,    11,     9,    11,    14,    50,    50,     7,    10,    15,
@@ -1528,18 +1312,6 @@ namespace ccbhj {
       50,    50,    50,    50,    50,    50,    50,    10,     8,    50,
       10,    34,    12,    45,     8,    15,     9,    11,    50,     8,
       50,    50,    11,    11,    45,    45,    27,    45
-=======
-      10,    14,    34,    11,     5,    40,    41,    42,    40,     4,
-      52,    14,    13,    43,    11,     9,    11,    15,    15,     8,
-      10,    12,    17,    26,    28,    29,    34,    43,    44,    45,
-      46,    47,    48,    49,    50,    51,    52,    43,    42,    43,
-       8,    50,    50,    10,     8,    50,    13,     7,    10,    14,
-      12,    45,     8,    16,    17,    18,    19,    20,    21,    22,
-      23,    24,    25,    11,    50,     8,    50,    50,    50,    53,
-      50,    50,    50,    50,    50,    50,    50,    50,    50,    50,
-      50,    11,    12,     9,    11,    15,    45,    43,    50,    27,
-      45
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
@@ -1548,16 +1320,10 @@ namespace ccbhj {
        0,    32,    33,    33,    34,    35,    35,    36,    36,    37,
       37,    38,    39,    39,    39,    40,    40,    40,    41,    41,
       42,    42,    43,    43,    44,    44,    45,    45,    45,    45,
-<<<<<<< HEAD
       45,    45,    46,    46,    47,    47,    48,    49,    49,    50,
       50,    50,    50,    50,    50,    50,    50,    50,    50,    50,
       50,    50,    51,    52,    52,    52,    52,    52,    52,    53,
       54,    54,    54
-=======
-      45,    46,    46,    47,    47,    48,    49,    49,    50,    50,
-      50,    50,    50,    50,    50,    50,    50,    50,    50,    50,
-      51,    51,    51,    51,    51,    51,    52,    53,    53,    53
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
   const signed char
@@ -1566,63 +1332,47 @@ namespace ccbhj {
        0,     2,     1,     0,     1,     1,     2,     1,     1,     3,
        6,     1,     6,     6,     5,     0,     1,     1,     1,     3,
        2,     4,     3,     2,     1,     2,     1,     1,     1,     1,
-<<<<<<< HEAD
        1,     1,     5,     7,     2,     1,     5,     2,     3,     1,
        3,     3,     3,     3,     3,     2,     3,     4,     3,     1,
        1,     1,     4,     3,     3,     3,     3,     3,     3,     1,
        0,     1,     3
-=======
-       1,     5,     7,     2,     1,     5,     2,     3,     1,     3,
-       3,     3,     3,     3,     2,     3,     4,     4,     1,     1,
-       3,     3,     3,     3,     3,     3,     1,     0,     1,     3
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
 
 #if YYDEBUG
   // YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
-  // First, the terminals, then, starting at \a yyntokens_, nonterminals.
+  // First, the terminals, then, starting at \a YYNTOKENS, nonterminals.
   const char*
   const Parser::yytname_[] =
   {
-  "\"end of file\"", "error", "$undefined", "IDENTIFIER", "INT_CONST",
-  "VOID", "INT", "ASSIGN", "SEMI", "COMMA", "LPAREN", "RPAREN", "RBRACE",
-  "LBRACE", "LBRACKET", "RBRACKET", "PLUS", "MINUS", "MUL", "DIV",
-  "GREATER", "LESS", "EQUAL", "ELESS", "EGREATER", "NEQUAL", "IF", "ELSE",
-  "RETURN", "WHILE", "NEG", "NO_ELSE", "$accept", "program", "id",
-  "declaration_list", "declaration", "var_declaration", "var_type",
+  "\"end of file\"", "error", "\"invalid token\"", "IDENTIFIER",
+  "INT_CONST", "VOID", "INT", "ASSIGN", "SEMI", "COMMA", "LPAREN",
+  "RPAREN", "RBRACE", "LBRACE", "LBRACKET", "RBRACKET", "PLUS", "MINUS",
+  "MUL", "DIV", "GREATER", "LESS", "EQUAL", "ELESS", "EGREATER", "NEQUAL",
+  "IF", "ELSE", "RETURN", "WHILE", "NEG", "NO_ELSE", "$accept", "program",
+  "id", "declaration_list", "declaration", "var_declaration", "var_type",
   "func_declaration", "params", "param_list", "param", "compound_stmt",
   "stmt_list", "stmt", "selection_stmt", "expr_stmt", "iteration_stmt",
-<<<<<<< HEAD
   "return_stmt", "expr", "array_ref", "comparision", "numeric", "args", YY_NULLPTR
-=======
-  "return_stmt", "expr", "comparision", "numeric", "args", YY_NULLPTR
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
+#endif
 
 
+#if YYDEBUG
   const unsigned char
   Parser::yyrline_[] =
   {
        0,   107,   107,   108,   111,   115,   116,   119,   120,   123,
      124,   128,   131,   132,   133,   137,   138,   139,   142,   143,
-<<<<<<< HEAD
      147,   148,   152,   153,   156,   157,   160,   161,   162,   163,
      164,   165,   169,   170,   173,   174,   177,   180,   181,   184,
      185,   186,   187,   188,   189,   190,   191,   192,   193,   194,
      195,   196,   199,   201,   202,   203,   204,   205,   206,   209,
      212,   213,   214
-=======
-     146,   147,   151,   152,   155,   156,   159,   160,   161,   162,
-     163,   167,   168,   171,   172,   175,   178,   179,   182,   183,
-     184,   185,   186,   187,   188,   189,   190,   191,   192,   193,
-     196,   197,   198,   199,   200,   201,   204,   207,   208,   209
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
   };
 
-  // Print the state stack on the debug stream.
   void
-  Parser::yystack_print_ ()
+  Parser::yy_stack_print_ () const
   {
     *yycdebug_ << "Stack now";
     for (stack_type::const_iterator
@@ -1633,9 +1383,8 @@ namespace ccbhj {
     *yycdebug_ << '\n';
   }
 
-  // Report on the debug stream that the rule \a yyrule is going to be reduced.
   void
-  Parser::yy_reduce_print_ (int yyrule)
+  Parser::yy_reduce_print_ (int yyrule) const
   {
     int yylno = yyrline_[yyrule];
     int yynrhs = yyr2_[yyrule];
@@ -1649,13 +1398,13 @@ namespace ccbhj {
   }
 #endif // YYDEBUG
 
-  Parser::token_number_type
+  Parser::symbol_kind_type
   Parser::yytranslate_ (int t)
   {
     // YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to
     // TOKEN-NUM as returned by yylex.
     static
-    const token_number_type
+    const signed char
     translate_table[] =
     {
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -1691,24 +1440,18 @@ namespace ccbhj {
     const int user_token_number_max_ = 286;
 
     if (t <= 0)
-      return yyeof_;
+      return symbol_kind::S_YYEOF;
     else if (t <= user_token_number_max_)
-      return translate_table[t];
+      return YY_CAST (symbol_kind_type, translate_table[t]);
     else
-      return yy_undef_token_;
+      return symbol_kind::S_YYUNDEF;
   }
 
 #line 5 "parser.y"
 } // ccbhj
-<<<<<<< HEAD
-#line 1431 "parser.cc"
+#line 1453 "parser.cc"
 
 #line 216 "parser.y"
-=======
-#line 1400 "parser.cc"
-
-#line 211 "parser.y"
->>>>>>> 2296abc9fea7efd462473bd8d7e309aabc557ac9
 
 void ccbhj::Parser::error(const Parser::location_type& l, const std::string& m) {
     drv.error(l, m);

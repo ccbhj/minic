@@ -18,12 +18,6 @@ scanner.cc: scanner.l
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 minic: parser.o scanner.o driver.o main.o 
-	$(CXX) $(LDFLAGS) -o $@ parser.o scanner.o driver.o main.o 
-
-clean: 
-	$(CXX)  -c $(shell llvm-config --cxxflags) -fexceptions  -o $@ $<
-
-minic: parser.o scanner.o driver.o main.o 
 	$(CXX) -o $@ parser.o scanner.o driver.o main.o  $(shell llvm-config --ldflags --libs) -lpthread
 
 clean:

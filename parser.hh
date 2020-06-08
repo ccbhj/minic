@@ -1,4 +1,4 @@
-// A Bison parser, made by GNU Bison 3.5.4.
+// A Bison parser, made by GNU Bison 3.6.2.
 
 // Skeleton interface for Bison LALR(1) parsers in C++
 
@@ -38,8 +38,9 @@
 
 // C++ LALR(1) parser skeleton written by Akim Demaille.
 
-// Undocumented macros, especially those whose name start with YY_,
-// are private implementation details.  Do not rely on them.
+// DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+// especially those whose name start with YY_ or yy_.  They are
+// private implementation details that can be changed or removed.
 
 #ifndef YY_YY_PARSER_HH_INCLUDED
 # define YY_YY_PARSER_HH_INCLUDED
@@ -61,7 +62,7 @@
 # endif
 
 
-#line 65 "parser.hh"
+#line 66 "parser.hh"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -191,7 +192,7 @@
 
 #line 5 "parser.y"
 namespace ccbhj {
-#line 195 "parser.hh"
+#line 196 "parser.hh"
 
 
 
@@ -216,7 +217,7 @@ namespace ccbhj {
     class Formals *FORMALS;
     class ArgsNode *ARGS;
 
-#line 220 "parser.hh"
+#line 221 "parser.hh"
 
     };
 #else
@@ -243,60 +244,130 @@ namespace ccbhj {
       location_type location;
     };
 
-    /// Tokens.
+    /// Token kinds.
     struct token
     {
-      enum yytokentype
+      enum token_kind_type
       {
-        END = 0,
-        IDENTIFIER = 258,
-        INT_CONST = 259,
-        VOID = 260,
-        INT = 261,
-        ASSIGN = 262,
-        SEMI = 263,
-        COMMA = 264,
-        LPAREN = 265,
-        RPAREN = 266,
-        RBRACE = 267,
-        LBRACE = 268,
-        LBRACKET = 269,
-        RBRACKET = 270,
-        PLUS = 271,
-        MINUS = 272,
-        MUL = 273,
-        DIV = 274,
-        GREATER = 275,
-        LESS = 276,
-        EQUAL = 277,
-        ELESS = 278,
-        EGREATER = 279,
-        NEQUAL = 280,
-        IF = 281,
-        ELSE = 282,
-        RETURN = 283,
-        WHILE = 284,
-        NEG = 285,
-        NO_ELSE = 286
+        YYEMPTY = -2,
+    END = 0,                       // "end of file"
+    YYerror = 256,                 // error
+    YYUNDEF = 257,                 // "invalid token"
+    IDENTIFIER = 258,              // IDENTIFIER
+    INT_CONST = 259,               // INT_CONST
+    VOID = 260,                    // VOID
+    INT = 261,                     // INT
+    ASSIGN = 262,                  // ASSIGN
+    SEMI = 263,                    // SEMI
+    COMMA = 264,                   // COMMA
+    LPAREN = 265,                  // LPAREN
+    RPAREN = 266,                  // RPAREN
+    RBRACE = 267,                  // RBRACE
+    LBRACE = 268,                  // LBRACE
+    LBRACKET = 269,                // LBRACKET
+    RBRACKET = 270,                // RBRACKET
+    PLUS = 271,                    // PLUS
+    MINUS = 272,                   // MINUS
+    MUL = 273,                     // MUL
+    DIV = 274,                     // DIV
+    GREATER = 275,                 // GREATER
+    LESS = 276,                    // LESS
+    EQUAL = 277,                   // EQUAL
+    ELESS = 278,                   // ELESS
+    EGREATER = 279,                // EGREATER
+    NEQUAL = 280,                  // NEQUAL
+    IF = 281,                      // IF
+    ELSE = 282,                    // ELSE
+    RETURN = 283,                  // RETURN
+    WHILE = 284,                   // WHILE
+    NEG = 285,                     // NEG
+    NO_ELSE = 286                  // NO_ELSE
+      };
+      /// Backward compatibility alias (Bison 3.6).
+      typedef token_kind_type yytokentype;
+    };
+
+    /// Token kind, as returned by yylex.
+    typedef token::yytokentype token_kind_type;
+
+    /// Backward compatibility alias (Bison 3.6).
+    typedef token_kind_type token_type;
+
+    /// Symbol kinds.
+    struct symbol_kind
+    {
+      enum symbol_kind_type
+      {
+        YYNTOKENS = 32, ///< Number of tokens.
+        S_YYEMPTY = -2,
+        S_YYEOF = 0,                             // "end of file"
+        S_YYerror = 1,                           // error
+        S_YYUNDEF = 2,                           // "invalid token"
+        S_IDENTIFIER = 3,                        // IDENTIFIER
+        S_INT_CONST = 4,                         // INT_CONST
+        S_VOID = 5,                              // VOID
+        S_INT = 6,                               // INT
+        S_ASSIGN = 7,                            // ASSIGN
+        S_SEMI = 8,                              // SEMI
+        S_COMMA = 9,                             // COMMA
+        S_LPAREN = 10,                           // LPAREN
+        S_RPAREN = 11,                           // RPAREN
+        S_RBRACE = 12,                           // RBRACE
+        S_LBRACE = 13,                           // LBRACE
+        S_LBRACKET = 14,                         // LBRACKET
+        S_RBRACKET = 15,                         // RBRACKET
+        S_PLUS = 16,                             // PLUS
+        S_MINUS = 17,                            // MINUS
+        S_MUL = 18,                              // MUL
+        S_DIV = 19,                              // DIV
+        S_GREATER = 20,                          // GREATER
+        S_LESS = 21,                             // LESS
+        S_EQUAL = 22,                            // EQUAL
+        S_ELESS = 23,                            // ELESS
+        S_EGREATER = 24,                         // EGREATER
+        S_NEQUAL = 25,                           // NEQUAL
+        S_IF = 26,                               // IF
+        S_ELSE = 27,                             // ELSE
+        S_RETURN = 28,                           // RETURN
+        S_WHILE = 29,                            // WHILE
+        S_NEG = 30,                              // NEG
+        S_NO_ELSE = 31,                          // NO_ELSE
+        S_YYACCEPT = 32,                         // $accept
+        S_program = 33,                          // program
+        S_id = 34,                               // id
+        S_declaration_list = 35,                 // declaration_list
+        S_declaration = 36,                      // declaration
+        S_var_declaration = 37,                  // var_declaration
+        S_var_type = 38,                         // var_type
+        S_func_declaration = 39,                 // func_declaration
+        S_params = 40,                           // params
+        S_param_list = 41,                       // param_list
+        S_param = 42,                            // param
+        S_compound_stmt = 43,                    // compound_stmt
+        S_stmt_list = 44,                        // stmt_list
+        S_stmt = 45,                             // stmt
+        S_selection_stmt = 46,                   // selection_stmt
+        S_expr_stmt = 47,                        // expr_stmt
+        S_iteration_stmt = 48,                   // iteration_stmt
+        S_return_stmt = 49,                      // return_stmt
+        S_expr = 50,                             // expr
+        S_array_ref = 51,                        // array_ref
+        S_comparision = 52,                      // comparision
+        S_numeric = 53,                          // numeric
+        S_args = 54                              // args
       };
     };
 
-    /// (External) token type, as returned by yylex.
-    typedef token::yytokentype token_type;
+    /// (Internal) symbol kind.
+    typedef symbol_kind::symbol_kind_type symbol_kind_type;
 
-    /// Symbol type: an internal symbol number.
-    typedef int symbol_number_type;
-
-    /// The symbol type number to denote an empty symbol.
-    enum { empty_symbol = -2 };
-
-    /// Internal symbol number for tokens (subsumed by symbol_number_type).
-    typedef signed char token_number_type;
+    /// The number of tokens.
+    static const symbol_kind_type YYNTOKENS = symbol_kind::YYNTOKENS;
 
     /// A complete symbol.
     ///
-    /// Expects its Base type to provide access to the symbol type
-    /// via type_get ().
+    /// Expects its Base type to provide access to the symbol kind
+    /// via kind ().
     ///
     /// Provide access to semantic value and location.
     template <typename Base>
@@ -313,7 +384,11 @@ namespace ccbhj {
 
 #if 201103L <= YY_CPLUSPLUS
       /// Move constructor.
-      basic_symbol (basic_symbol&& that);
+      basic_symbol (basic_symbol&& that)
+        : Base (std::move (that))
+        , value (std::move (that.value))
+        , location (std::move (that.location))
+      {}
 #endif
 
       /// Copy constructor.
@@ -339,6 +414,18 @@ namespace ccbhj {
         Base::clear ();
       }
 
+#if YYDEBUG || 0
+      /// The user-facing name of this symbol.
+      const char *name () const YY_NOEXCEPT
+      {
+        return Parser::symbol_name (this->kind ());
+      }
+#endif // #if YYDEBUG || 0
+
+
+      /// Backward compatibility (Bison 3.6).
+      symbol_kind_type type_get () const YY_NOEXCEPT;
+
       /// Whether empty.
       bool empty () const YY_NOEXCEPT;
 
@@ -359,48 +446,60 @@ namespace ccbhj {
     };
 
     /// Type access provider for token (enum) based symbols.
-    struct by_type
+    struct by_kind
     {
       /// Default constructor.
-      by_type ();
+      by_kind ();
 
 #if 201103L <= YY_CPLUSPLUS
       /// Move constructor.
-      by_type (by_type&& that);
+      by_kind (by_kind&& that);
 #endif
 
       /// Copy constructor.
-      by_type (const by_type& that);
+      by_kind (const by_kind& that);
 
-      /// The symbol type as needed by the constructor.
-      typedef token_type kind_type;
+      /// The symbol kind as needed by the constructor.
+      typedef token_kind_type kind_type;
 
       /// Constructor from (external) token numbers.
-      by_type (kind_type t);
+      by_kind (kind_type t);
 
       /// Record that this symbol is empty.
       void clear ();
 
-      /// Steal the symbol type from \a that.
-      void move (by_type& that);
+      /// Steal the symbol kind from \a that.
+      void move (by_kind& that);
 
       /// The (internal) type number (corresponding to \a type).
       /// \a empty when empty.
-      symbol_number_type type_get () const YY_NOEXCEPT;
+      symbol_kind_type kind () const YY_NOEXCEPT;
 
-      /// The symbol type.
-      /// \a empty_symbol when empty.
-      /// An int, not token_number_type, to be able to store empty_symbol.
-      int type;
+      /// Backward compatibility (Bison 3.6).
+      symbol_kind_type type_get () const YY_NOEXCEPT;
+
+      /// The symbol kind.
+      /// \a S_YYEMPTY when empty.
+      symbol_kind_type kind_;
     };
 
+    /// Backward compatibility for a private implementation detail (Bison 3.6).
+    typedef by_kind by_type;
+
     /// "External" symbols: returned by the scanner.
-    struct symbol_type : basic_symbol<by_type>
+    struct symbol_type : basic_symbol<by_kind>
     {};
 
     /// Build a parser object.
     Parser (Driver& drv_yyarg);
     virtual ~Parser ();
+
+#if 201103L <= YY_CPLUSPLUS
+    /// Non copyable.
+    Parser (const Parser&) = delete;
+    /// Non copyable.
+    Parser& operator= (const Parser&) = delete;
+#endif
 
     /// Parse.  An alias for parse ().
     /// \returns  0 iff parsing succeeded.
@@ -432,21 +531,26 @@ namespace ccbhj {
     /// Report a syntax error.
     void error (const syntax_error& err);
 
+#if YYDEBUG || 0
+    /// The user-facing name of the symbol whose (internal) number is
+    /// YYSYMBOL.  No bounds checking.
+    static const char *symbol_name (symbol_kind_type yysymbol);
+#endif // #if YYDEBUG || 0
+
+
 
 
   private:
-    /// This class is not copyable.
+#if YY_CPLUSPLUS < 201103L
+    /// Non copyable.
     Parser (const Parser&);
+    /// Non copyable.
     Parser& operator= (const Parser&);
+#endif
+
 
     /// Stored state numbers (used for stacks).
     typedef signed char state_type;
-
-    /// Generate an error message.
-    /// \param yystate   the state where the error occurred.
-    /// \param yyla      the lookahead token.
-    virtual std::string yysyntax_error_ (state_type yystate,
-                                         const symbol_type& yyla) const;
 
     /// Compute post-reduction state.
     /// \param yystate   the current state
@@ -464,62 +568,65 @@ namespace ccbhj {
     static const signed char yypact_ninf_;
     static const signed char yytable_ninf_;
 
-    /// Convert a scanner token number \a t to a symbol number.
-    /// In theory \a t should be a token_type, but character literals
+    /// Convert a scanner token kind \a t to a symbol kind.
+    /// In theory \a t should be a token_kind_type, but character literals
     /// are valid, yet not members of the token_type enum.
-    static token_number_type yytranslate_ (int t);
+    static symbol_kind_type yytranslate_ (int t);
+
+#if YYDEBUG || 0
+    /// For a symbol, its name in clear.
+    static const char* const yytname_[];
+#endif // #if YYDEBUG || 0
+
 
     // Tables.
-    // YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
+    // YYPACTSTATE-NUM -- Index in YYTABLE of the portion describing
     // STATE-NUM.
     static const short yypact_[];
 
-    // YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
+    // YYDEFACTSTATE-NUM -- Default reduction number in state STATE-NUM.
     // Performed when YYTABLE does not specify something else to do.  Zero
     // means the default is an error.
     static const signed char yydefact_[];
 
-    // YYPGOTO[NTERM-NUM].
+    // YYPGOTONTERM-NUM.
     static const signed char yypgoto_[];
 
-    // YYDEFGOTO[NTERM-NUM].
+    // YYDEFGOTONTERM-NUM.
     static const signed char yydefgoto_[];
 
-    // YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
+    // YYTABLEYYPACT[STATE-NUM] -- What to do in state STATE-NUM.  If
     // positive, shift that token.  If negative, reduce the rule whose
     // number is the opposite.  If YYTABLE_NINF, syntax error.
     static const signed char yytable_[];
 
     static const signed char yycheck_[];
 
-    // YYSTOS[STATE-NUM] -- The (internal number of the) accessing
+    // YYSTOSSTATE-NUM -- The (internal number of the) accessing
     // symbol of state STATE-NUM.
     static const signed char yystos_[];
 
-    // YYR1[YYN] -- Symbol number of symbol that rule YYN derives.
+    // YYR1YYN -- Symbol number of symbol that rule YYN derives.
     static const signed char yyr1_[];
 
-    // YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.
+    // YYR2YYN -- Number of symbols on the right hand side of rule YYN.
     static const signed char yyr2_[];
 
 
 #if YYDEBUG
-    /// For a symbol, its name in clear.
-    static const char* const yytname_[];
-
-    // YYRLINE[YYN] -- Source line where rule number YYN was defined.
+    // YYRLINEYYN -- Source line where rule number YYN was defined.
     static const unsigned char yyrline_[];
     /// Report on the debug stream that the rule \a r is going to be reduced.
-    virtual void yy_reduce_print_ (int r);
+    virtual void yy_reduce_print_ (int r) const;
     /// Print the state stack on the debug stream.
-    virtual void yystack_print_ ();
+    virtual void yy_stack_print_ () const;
 
     /// Debugging level.
     int yydebug_;
     /// Debug stream.
     std::ostream* yycdebug_;
 
-    /// \brief Display a symbol type, value and location.
+    /// \brief Display a symbol kind, value and location.
     /// \param yyo    The output stream.
     /// \param yysym  The symbol.
     template <typename Base>
@@ -540,7 +647,7 @@ namespace ccbhj {
       /// Default constructor.
       by_state () YY_NOEXCEPT;
 
-      /// The symbol type as needed by the constructor.
+      /// The symbol kind as needed by the constructor.
       typedef state_type kind_type;
 
       /// Constructor.
@@ -552,12 +659,12 @@ namespace ccbhj {
       /// Record that this symbol is empty.
       void clear () YY_NOEXCEPT;
 
-      /// Steal the symbol type from \a that.
+      /// Steal the symbol kind from \a that.
       void move (by_state& that);
 
-      /// The (internal) type number (corresponding to \a state).
-      /// \a empty_symbol when empty.
-      symbol_number_type type_get () const YY_NOEXCEPT;
+      /// The symbol kind (corresponding to \a state).
+      /// \a S_YYEMPTY when empty.
+      symbol_kind_type kind () const YY_NOEXCEPT;
 
       /// The state number used to denote an empty symbol.
       /// We use the initial state, as it does not have a value.
@@ -596,14 +703,21 @@ namespace ccbhj {
     {
     public:
       // Hide our reversed order.
-      typedef typename S::reverse_iterator iterator;
-      typedef typename S::const_reverse_iterator const_iterator;
+      typedef typename S::iterator iterator;
+      typedef typename S::const_iterator const_iterator;
       typedef typename S::size_type size_type;
       typedef typename std::ptrdiff_t index_type;
 
       stack (size_type n = 200)
         : seq_ (n)
       {}
+
+#if 201103L <= YY_CPLUSPLUS
+      /// Non copyable.
+      stack (const stack&) = delete;
+      /// Non copyable.
+      stack& operator= (const stack&) = delete;
+#endif
 
       /// Random access.
       ///
@@ -655,24 +769,18 @@ namespace ccbhj {
         return index_type (seq_.size ());
       }
 
-      std::ptrdiff_t
-      ssize () const YY_NOEXCEPT
-      {
-        return std::ptrdiff_t (size ());
-      }
-
       /// Iterator on top of the stack (going downwards).
       const_iterator
       begin () const YY_NOEXCEPT
       {
-        return seq_.rbegin ();
+        return seq_.begin ();
       }
 
       /// Bottom of the stack.
       const_iterator
       end () const YY_NOEXCEPT
       {
-        return seq_.rend ();
+        return seq_.end ();
       }
 
       /// Present a slice of the top of a stack.
@@ -696,8 +804,12 @@ namespace ccbhj {
       };
 
     private:
+#if YY_CPLUSPLUS < 201103L
+      /// Non copyable.
       stack (const stack&);
+      /// Non copyable.
       stack& operator= (const stack&);
+#endif
       /// The wrapped container.
       S seq_;
     };
@@ -727,29 +839,24 @@ namespace ccbhj {
     /// Pop \a n symbols from the stack.
     void yypop_ (int n = 1);
 
-    /// Some specific tokens.
-    static const token_number_type yy_error_token_ = 1;
-    static const token_number_type yy_undef_token_ = 2;
-
     /// Constants.
     enum
     {
-      yyeof_ = 0,
       yylast_ = 253,     ///< Last index in yytable_.
       yynnts_ = 23,  ///< Number of nonterminal symbols.
-      yyfinal_ = 13, ///< Termination state number.
-      yyntokens_ = 32  ///< Number of tokens.
+      yyfinal_ = 13 ///< Termination state number.
     };
 
 
     // User arguments.
     Driver& drv;
+
   };
 
 
 #line 5 "parser.y"
 } // ccbhj
-#line 753 "parser.hh"
+#line 860 "parser.hh"
 
 
 
