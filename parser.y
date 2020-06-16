@@ -8,6 +8,7 @@
 // %define parse.error verbose
 %define parse.assert
 // keep track of current position 
+
 %locations 
 %code requires {
     namespace ccbhj {
@@ -26,7 +27,7 @@
 
 }
 
-%parse-param { Driver& drv}
+%parse-param { Driver& drv};
 
 %initial-action
 {
@@ -39,6 +40,8 @@
 #include <iostream>
 #include "context.h"
 #include "driver.h"
+
+
 
 #undef yylex
 #define yylex drv.scanner->yylex
@@ -89,7 +92,7 @@ using std::endl;
 
 // declare non-terminal here
 %type <IDENT> id array_ref
-%type <EXPR> numeric expr comparision
+%type <EXPR> numeric expr comparision 
 %type <ARGS> args
 %type <BLOCK> program declaration_list stmt_list  compound_stmt  
 %type <STMT> declaration var_declaration func_declaration param expr_stmt stmt 
@@ -99,6 +102,9 @@ using std::endl;
 
 // start from "program" token
 %start  program 
+%{
+%}
+
 
 
 /* Grammar Rules */
@@ -108,7 +114,7 @@ program: declaration_list { drv.ctx->programBlock = $1; }
        | %empty { cout << "empty file to parse" << endl; }
 ;
 
-id: IDENTIFIER { $$ = new IdentifierNode($1); }
+id: IDENTIFIER { $$ = new IdentifierNode($1, @1.begin.line); }
   ;
 
 
@@ -121,15 +127,23 @@ declaration: var_declaration  { $$ = $1; }
 ;
 
 var_declaration: var_type id SEMI { $$ = new Formal($1, $2);}
-               | var_type id LBRACKET expr RBRACKET SEMI { $$ = new ArrayFormal($1, $2, $4); }
+               | var_type id LBRACKET INT_CONST RBRACKET SEMI { $$ = new
+               ArrayFormal($1, $2, std::stoi(*$4)); delete $4; }
+               |  var_type id LBRACKET expr RBRACKET SEMI  { cout << "array length must be a const integer" << endl; yyerrok; }
 ;
 
 // variable can only be integer yet.
 var_type: INT { $$ = Type::int_; }
 ;
 
-func_declaration: VOID id LPAREN params RPAREN compound_stmt { $$ = new FuncDeclNode(Type::void_, $2, $4, $6); }
-                | var_type id LPAREN params RPAREN compound_stmt { $$ = new FuncDeclNode($1, $2, $4, $6); }
+func_declaration: VOID id LPAREN params RPAREN compound_stmt {
+                  $$ = new FuncDeclNode(Type::void_, $2, $4, $6); 
+                    yyerrok;
+                  }
+                | var_type id LPAREN params RPAREN compound_stmt {
+                  $$ = new FuncDeclNode($1, $2, $4, $6); 
+                    yyerrok;
+                  }
                 | error LPAREN param RPAREN compound_stmt { cout << "invalid return type" << endl; yyerrok; }
 ;
 
@@ -149,7 +163,8 @@ param: var_type id { $$ = new Formal($1, $2); }
 ;
 
 // local_declaration is part of stmt_list here 
-compound_stmt: LBRACE stmt_list RBRACE  { $$ = $2; }
+compound_stmt: LBRACE stmt_list return_stmt RBRACE  { $$ = $2; $2->statements.push_back($3); }
+             | LBRACE stmt_list RBRACE { $$ = $2; }
              | LBRACE /* empty body */ RBRACE { $$ = nullptr;}
 ;
 
@@ -162,7 +177,7 @@ stmt: expr_stmt
       | compound_stmt { $<STMT>$ = $1;  }
       | selection_stmt 
       | iteration_stmt
-      | return_stmt 
+      | return_stmt
 ;
 
 
@@ -181,6 +196,8 @@ return_stmt: RETURN SEMI  { $$ = new ReturnNode(); }
            | RETURN expr SEMI { $$ = new ReturnNode($2); }
 ;
 
+array_ref: id LBRACKET expr RBRACKET  { $$ = new ArrayRef($1, $3); }
+
 expr: comparision 
     | LPAREN expr RPAREN     { $$ = $2;}
     | expr PLUS expr         { $$ = new BinaryOperator(BiOpt::plus, $1, $3);}
@@ -196,7 +213,6 @@ expr: comparision
     | id                     { $$ = $1; }
 ;
 
-array_ref: IDENTIFIER LBRACKET expr RBRACKET  { $$ = new ArrayRef($1, $3); }
 
 comparision: expr LESS expr           { $$ = new BinaryOperator(BiOpt::less, $1, $3);}
     | expr GREATER expr               { $$ = new BinaryOperator(BiOpt::greater,$1, $3);}

@@ -25,8 +25,11 @@ enum class BiOpt {
 // 这里Type不能为enum class
 // 不然不能应用在token中
 enum Type {
+  ERR_TYPE = -1, 
   void_ = 0,
-  int_ 
+  int_ = 1,
+  array_,
+  int_ref, 
 };
 
 } // namespace ccbhj

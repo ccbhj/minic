@@ -19,6 +19,7 @@ using type = ccbhj::Type;
 %}
 
 %option debug
+%option yylineno
 %option nodefault
 %option yyclass="ccbhj::Scanner"
 %option noyywrap

@@ -4,8 +4,8 @@ YACC = bison
 
 CXXFLAGS = -W -Wall  -g
 
-HEADERS = driver.h tokens.h ast.h parser.hh position.hh \
-	scanner.h stack.hh tinyContext.h location.hh 
+HEADERS = driver.h tokens.h ast.h context.h  code_gen_ctx.h parser.hh position.hh \
+	scanner.h stack.hh  location.hh 
 
 all: minic
 parser.cc: parser.y
@@ -17,8 +17,8 @@ scanner.cc: scanner.l
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-minic: parser.o scanner.o driver.o main.o 
-	$(CXX) -o $@ parser.o scanner.o driver.o main.o  $(shell llvm-config --ldflags --libs) -lpthread
+minic: parser.o scanner.o driver.o main.o code_gen.o code_gen_ctx.o
+	$(CXX) -o $@ $^
 
 clean:
 	rm -f minic *.o 

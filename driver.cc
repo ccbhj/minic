@@ -2,23 +2,18 @@
 #include <cctype>
 
 namespace ccbhj {
-Driver::~Driver() {
-  delete scanner;
-  scanner = nullptr;
-  delete parser;
-  parser = nullptr;
-}
 
-int Driver::parse(std::istream &is, const std::string &stream_name) {
+bool Driver::parse(std::istream &is, const std::string &stream_name) {
   if (!is.good()) {
     exit(EXIT_FAILURE);
   }
   output = stream_name;
-  scanner = new Scanner(&is);
+  this->scanner = new Scanner(&is);
   scanner->set_debug(trace_scanning);
 
-  parser = new Parser(*this);
+  this->parser = new Parser(*this);
   parser->set_debug_level(trace_parsing);
+
   return parser->parse() == 0;
 }
 

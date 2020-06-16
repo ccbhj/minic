@@ -1,21 +1,22 @@
-#ifndef _AST_
-#define _AST_
+#ifndef _AST_H_
+#define _AST_H_
 
 #include <algorithm>
 #include <functional>
 #include <iostream>
 #include <iterator>
-#include <llvm/IR/Value.h>
 #include <ostream>
 #include <string>
 #include <vector>
+#include <assert.h>
 
 #include "tokens.h"
-#include "code_gen_ctx.h"
 
-#define T2STR(t) (t == Type::int_ ? "int": "void")
+#define T2STR(t) (t == Type::int_ ? "int" : "void")
 
 namespace ccbhj {
+class Context;
+class CodeGenContext;
 
 ////////////////////////////////////////////////////////
 //
@@ -31,9 +32,10 @@ public:
     return std::string(size * 2, ' ');
   }
 
-  // implement this to generate code for llvm
-  virtual llvm::Value* gen_code(const CodeGenContext &ctx);
-  
+  // implement this to generate code 
+  virtual void gen_code(CodeGenContext &, Context &) {
+    assert(false);
+  }
 };
 
 // Expression Node
@@ -83,19 +85,20 @@ public:
 
 class BlockNode : public StmtNode {
 public:
-  StmtList statements;
+  std::vector<StmtNode*> statements;
   BlockNode() {}
-  ~BlockNode(){
-    for (StmtNode *s : statements) {
+  ~BlockNode() {
+    for (Node *s : statements) {
       delete s;
     }
   }
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "BLOCK:" << std::endl;
     std::for_each(statements.begin(), statements.end(),
-        [&](StmtNode* s) { s->print(os, padding + 1);  });
+                  [&](StmtNode *s) { s->print(os, padding + 1); });
     os << get_indent(padding) << "ENDBLOCK" << std::endl;
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 // NumNode is a number type node.
@@ -107,32 +110,38 @@ public:
   void print(std::ostream &os, const size_t padding) const override {
     os << Node::get_indent(padding) << "int_const: " << value << std::endl;
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class IdentifierNode : public ExpNode {
 public:
   const std::string *name;
-  IdentifierNode(const std::string *name) : name(name) {}
-  ~IdentifierNode() { if (name) delete name; }
+  const int lineno;
+  IdentifierNode(const std::string *name, const int lineno) : name(name) , lineno(lineno) {}
+  ~IdentifierNode() {
+    if (name)
+      delete name;
+  }
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "symbol: " << *name << std::endl;
   }
+
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class ArrayRef : public IdentifierNode {
 public:
-    ExpNode *index;
-    ArrayRef(const std::string *name , ExpNode *index): IdentifierNode(name), index(index){ }
-    ~ArrayRef() { 
-	delete index;
-    }
+  ExpNode *index;
+  ArrayRef(IdentifierNode *id, ExpNode *index): IdentifierNode(id->name, id->lineno), index(index) {}
+  ~ArrayRef() { delete index; }
 
-    void print(std::ostream &os, const size_t padding) const override {
-	os << get_indent(padding) << "array quote: " << std::endl;
-	IdentifierNode::print(os, padding + 1);
-	os << get_indent(padding + 1) << "index: " << std::endl;
-	index->print(os, padding + 2);
-    }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "array quote: " << std::endl;
+    IdentifierNode::print(os, padding + 1);
+    os << get_indent(padding + 1) << "index: " << std::endl;
+    index->print(os, padding + 2);
+  }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class Formal : public StmtNode {
@@ -142,46 +151,46 @@ public:
 
   Formal(int type_decl, IdentifierNode *id)
       : type_decl((Type)type_decl), id(id) {}
-  ~Formal() {
-    delete id;
-  }
+  ~Formal() { delete id; }
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "formal: " << std::endl;
     os << get_indent(padding + 1) << "type: " << T2STR(type_decl) << std::endl;
     os << get_indent(padding + 1) << "ID: " << std::endl;
     id->print(os, padding + 2);
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
-class ArrayFormal: public Formal{ 
+class ArrayFormal : public Formal {
 public:
-    ExpNode *length ;
-    ArrayFormal(int typ, IdentifierNode *id, ExpNode *length = nullptr): Formal(typ, id), length(length) {}
-    ~ArrayFormal() { if (length) delete length; }
+  int length;
+  ArrayFormal(int typ, IdentifierNode *id, int len = 0) : Formal(typ, id), length(len) {}
+  ~ArrayFormal() { }
 
-    void print(std::ostream &os, const size_t padding) const override {
-	os << get_indent(padding) << "array: " << std::endl;
-	Formal::print(os, padding + 1);
-	if (length) {
-		os << get_indent(padding + 1) << "length: " << std::endl;
-		length->print(os, padding + 2);
-	}
-    }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "array: " << std::endl;
+    Formal::print(os, padding + 1);
+    if (length) 
+      os << get_indent(padding + 1) << "length: " << length << std::endl;
+  }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class Formals : public StmtNode {
-  public :
-   std::vector<Formal *> formals;
-   Formals() {}
-   ~Formals() {
-     for (Formal* f : formals)  {
-       delete f;
-     }
-   }
-   void print(std::ostream &os, const size_t padding) const override {
-     std::for_each(formals.begin(), formals.end(),
-         [&](Formal *f) { f->print(os, padding + 1); });
-   }
+public:
+  std::vector<Formal *> formals;
+  Formals() {}
+  ~Formals() {
+    for (Formal *f : formals) {
+      delete f;
+    }
+  }
+  void print(std::ostream &os, const size_t padding) const override {
+    std::for_each(formals.begin(), formals.end(),
+                  [&](Formal *f) { f->print(os, padding + 1); });
+  }
+
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class FuncDeclNode : public StmtNode {
@@ -190,16 +199,16 @@ public:
   Formals *formals = nullptr;
   Type ret_type;
   BlockNode *block;
-  FuncDeclNode(int ret_type, IdentifierNode *name, Formals *formals, BlockNode* block )
-    : name(name), formals(formals), ret_type((Type)ret_type), block(block)  { }
+  FuncDeclNode(int ret_type, IdentifierNode *name, Formals *formals,
+               BlockNode *block)
+    : name(name), formals(formals), ret_type((Type)ret_type), block(block) {}
 
   ~FuncDeclNode() {
     delete name;
     delete block;
-    if (formals)  {
+    if (formals) {
       delete formals;
     }
-
   }
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "function: " << std::endl;
@@ -207,45 +216,51 @@ public:
     name->print(os, padding + 2);
 
     if (formals) {
-	os << get_indent(padding + 1) << "formals" << std::endl;
-	formals->print(os, padding + 2);
+      os << get_indent(padding + 1) << "formals" << std::endl;
+      formals->print(os, padding + 2);
     }
 
-    os << get_indent(padding + 1) << "return type: " << T2STR(ret_type) << std::endl; 
+    os << get_indent(padding + 1) << "return type: " << T2STR(ret_type)
+       << std::endl;
     os << get_indent(padding + 1) << "body: " << std::endl;
     block->print(os, padding + 2);
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class ReturnNode : public StmtNode {
-  public:
-    ExpNode *expr;
-    ReturnNode(ExpNode *expr = nullptr): expr(expr){}
-    ~ReturnNode() {
-      if (expr) 
-        delete expr;
-    }
+public:
+  ExpNode *expr;
+  ReturnNode(ExpNode *expr = nullptr) : expr(expr) {}
+  ~ReturnNode() {
+    if (expr)
+      delete expr;
+  }
 
-    void print(std::ostream &os, const size_t padding) const override {
-      os << get_indent(padding) << "return: " << std::endl;
-      expr->print(os, padding + 1);
-    }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "return: " << std::endl;
+    expr->print(os, padding + 1);
+  }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class ArgsNode : public ExpNode {
-  public:
-    ExpList args ;
-    
-    ArgsNode(): args() {}
-    ~ArgsNode() {
-        std::for_each(args.begin(), args.end(),
-            [](ExpNode *e) { if (e) delete e; });
-    }
-  void print(std::ostream &os, const size_t padding) const override {
-    os << get_indent(padding) << "args: " << std::endl; 
-    std::for_each(args.begin(), args.end(),
-        [&](ExpNode *e) { e->print(os, padding+1); });
+public:
+  ExpList args;
+
+  ArgsNode() : args() {}
+  ~ArgsNode() {
+    std::for_each(args.begin(), args.end(), [](ExpNode *e) {
+      if (e)
+        delete e;
+    });
   }
+  void print(std::ostream &os, const size_t padding) const override {
+    os << get_indent(padding) << "args: " << std::endl;
+    std::for_each(args.begin(), args.end(),
+                  [&](ExpNode *e) { e->print(os, padding + 1); });
+  }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class MethodCallNode : public ExpNode {
@@ -266,26 +281,28 @@ public:
       args->print(os, padding + 1);
     }
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 // SymRefNode is a reference of a symbol.
 // AsgNode is a node representing '='
 class AsgNode : public ExpNode {
 public:
-  IdentifierNode *lhs = nullptr;
+  IdentifierNode *id = nullptr;
   ExpNode *rhs = nullptr;
-  AsgNode(IdentifierNode *id, ExpNode *exp) : lhs(id), rhs(exp) {}
+  AsgNode(IdentifierNode *id, ExpNode *exp) : id(id), rhs(exp) {}
   ~AsgNode() {
-    delete lhs;
+    delete id;
     delete rhs;
   }
 
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding);
     os << "=" << std::endl;
-    lhs->print(os, padding + 1);
+    id->print(os, padding + 1);
     rhs->print(os, padding + 1);
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 // BinaryOperator represents binary operator,
@@ -344,6 +361,7 @@ public:
     left->print(os, padding + 1);
     right->print(os, padding + 1);
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class UnaryOperator : public ExpNode {
@@ -364,6 +382,7 @@ public:
     os << sym << std::endl;
     target->print(os, padding + 1);
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 class ExpStmtNode : public ExpNode, public StmtNode {
@@ -375,6 +394,9 @@ public:
       expr->print(os, padding);
   }
   ~ExpStmtNode() { delete expr; }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override {
+    expr->gen_code(code_ctx, ast_ctx);
+  }
 };
 
 class WhileNode : public StmtNode {
@@ -395,6 +417,7 @@ public:
       th->print(os, padding + 1);
     }
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
 /*
@@ -457,7 +480,9 @@ public:
       el->print(os, padding + 1);
     }
   }
+  void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
+
 
 } // namespace ccbhj
 #endif // _AST_

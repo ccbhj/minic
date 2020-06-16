@@ -45,7 +45,7 @@
 #ifndef YY_YY_PARSER_HH_INCLUDED
 # define YY_YY_PARSER_HH_INCLUDED
 // "%code requires" blocks.
-#line 12 "parser.y"
+#line 13 "parser.y"
 
     namespace ccbhj {
         class Driver;
@@ -205,7 +205,7 @@ namespace ccbhj {
     /// Symbol semantic values.
     union semantic_type
     {
-#line 53 "parser.y"
+#line 56 "parser.y"
 
     int         TOKEN;
     int         TYPE;
@@ -350,8 +350,8 @@ namespace ccbhj {
         S_expr_stmt = 47,                        // expr_stmt
         S_iteration_stmt = 48,                   // iteration_stmt
         S_return_stmt = 49,                      // return_stmt
-        S_expr = 50,                             // expr
-        S_array_ref = 51,                        // array_ref
+        S_array_ref = 50,                        // array_ref
+        S_expr = 51,                             // expr
         S_comparision = 52,                      // comparision
         S_numeric = 53,                          // numeric
         S_args = 54                              // args
@@ -842,7 +842,7 @@ namespace ccbhj {
     /// Constants.
     enum
     {
-      yylast_ = 253,     ///< Last index in yytable_.
+      yylast_ = 244,     ///< Last index in yytable_.
       yynnts_ = 23,  ///< Number of nonterminal symbols.
       yyfinal_ = 13 ///< Termination state number.
     };

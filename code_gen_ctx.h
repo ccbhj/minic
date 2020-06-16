@@ -1,77 +1,132 @@
 #ifndef _CODE_GEN_CTX_H
 #define _CODE_GEN_CTX_H
 
-#include "parser.hh"
-#include <llvm/IR/BasicBlock.h>
-#include <llvm/IR/Function.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/Type.h>
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/LLVMContext.h>
-#include <llvm/IR/PassManager.h>
-#include <llvm/IR/Instructions.h>
-#include <llvm/IR/CallingConv.h>
-#include <llvm/Bitcode/BitcodeWriter.h>
-#include <llvm/IR/Verifier.h>
-#include <llvm/IR/IRPrintingPasses.h>
-#include <llvm/IR/IRBuilder.h>
-#include <llvm/Support//TargetSelect.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-// #include <llvm/ExecutionEngine/JIT.h>
-#include <llvm/Support/raw_ostream.h>
-#include <map>
-#include <stack>
+#include "context.h"
+#include <cassert>
+#include <cstdio>
+#include <ostream>
+#include <fstream>
+#include <cstring>
 
-static llvm::LLVMContext llvmctx;
 
 namespace ccbhj {
-class CodeGenBlock {
-  public:
-    llvm::BasicBlock *block;
-    llvm::Value *return_val;
-    std::map<std::string, llvm::Value*> locals;
+
+// 以下是一些寄存器
+// 程序计数器
+const int pc = 7;
+// 内存指针
+const int mp = 6;
+// gp 总是指向最大的地址
+const int gp = 5;
+// 2个累加器
+const int ac = 0;  // 优先用于存储值
+const int ac1 = 1; // 优先用于存地址
+
+// 当前函数栈底指针
+const int fp = 3;
+
+class CodeGenContext {
+
+private:
+  std::ostream *output = &std::cout; 
+  bool is_debug;
+
+public:
+  Context *ast_ctx;
+  // emitLoc
+  // 指令执行位置
+  int eloc = 0;
+  // highEmitLoc
+  int highloc = 0;
+
+  // 内存栈顶的距离fp的指针, 用于保存记录临时变量的位置, 所以必须小于等于-2
+  // 对于一个tmp_offset, 其内存地址可用 fp + tmp_offset来获取
+  // 当压栈时, 调用RM_ins("ST", reg, tmp_offset--, fp, "")即可
+  // 出栈则为RM_ins("LD", reg, ++tmp_offset, fp, "")
+  int tmp_offset = 0;
+  
+  // 当get_val为true时, 获取变量的值, 而不是地址
+  bool get_val = false;
+
+  // main函数开始的位置(为一个指令号)
+  int main_func_offset = 0 ;
+
+  const static  size_t LINE_SIZE = 1024;
+  
+public:
+  explicit CodeGenContext(Context *ctx) : ast_ctx(ctx) { }
+
+  ~CodeGenContext() {
+    if (output != &std::cout)
+      delete output;
+  }
+  
+  inline void set_out(std::string &output) {
+    if (output == "cout") {
+      this->output = &std::cout;
+      return;
+    }
+    std::ostream *os = new std::ofstream(output);
+    this->output = os;
+  }
+  
+  inline void set_debug(bool debug) {
+    this->is_debug = debug;
+  }
+
+  inline void print_err(const std::string &msg) {
+    RO_ins("HALT", 0, 0, 0, "");
+    std::cerr << msg << std::endl;
+  }
+
+
+  // 输出指令到文件
+  void print_buf(const std::string &str, const std::string &comment) {
+    (*output) << str ;
+    if (is_debug)
+      (*output) << "   # " << comment;
+    (*output)<< std::endl;
+  }
+
+  void print_debug(const std::string &comment) {
+    if (is_debug)
+      (*output) << "# " << comment << std::endl;
+  }
+  
+  
+  // RO_ins 写一条寄存器-寄存器指令
+  // op: 操作
+  // r: 目标寄存器
+  // s: 源寄存器
+  // t: 源寄存器
+  // 常用于ADD, MUL, SUB, JLT 等指令
+  void RO_ins(const char *op, int r, int s, int t, const char *c);
+
+  // RM_ins 写一条寄存器-内存指令
+  // r - 寄存器
+  // d - 偏移量(常数或寄存器号)
+  // s - 基址寄存器
+  // 常用于, LDA, LDC, ST, LD等指令
+  void RM_ins(const char *op, int r, int d, int s,const char *c); 
+
+  // RM_Abs_ins 将一个相对地址加上pc来转换成绝对地址
+  // 并写一条寄存器-内存有关的指令
+  void RM_Abs_ins(const char *op, int r, int a, const char *c);
+
+  // skip 跳过n条指令
+  // skip(0) 可以用于获取当前位置
+  int skip(int n);
+  
+  // backup 存起当前位置
+  void backup(int l);
+  
+  // restore恢复backup存的位置
+  inline void restore() {
+    eloc = highloc;
+  }
+  
+  // 调用此函数来开始生成代码
+  void gen_code();
 };
-
-class CodeGenContext{
-  private:
-    std::stack<CodeGenBlock*> blocks;
-    llvm::Function *main_func;
-
-  public:
-    llvm::Module *mod;
-    CodeGenContext(): mod(new llvm::Module("main", llvmctx)) {}
-
-    void generate_code(BlockNode *root);
-    llvm::GenericValue runCode();
-    std::map<std::string, llvm::Value*>& locals() {
-      return blocks.top()->locals;
-    }
-
-    llvm::BasicBlock* current_block() {
-      return blocks.top()->block;
-    }
-
-    void push_block(llvm::BasicBlock *block) {
-      blocks.push(new CodeGenBlock());
-      blocks.top()->return_val = NULL;
-      blocks.top()->block = block;
-    }
-
-    void pop_block() {
-      CodeGenBlock *top = blocks.top();
-      blocks.pop();
-      delete top;
-    }
-
-    void set_current_ret_val(llvm::Value *val) {
-      blocks.top()->return_val = val;
-    }
-
-    llvm::Value* get_current_ret_val() {
-      return blocks.top()->return_val;
-    }
-};
-
 }
-
-#endif
+#endif 
