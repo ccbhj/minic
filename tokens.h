@@ -29,8 +29,18 @@ enum Type {
   void_ = 0,
   int_ = 1,
   array_,
-  int_ref, 
+  array_ref,
 };
 
+inline const std::string T2STR(Type t) {
+  switch (t){
+  case void_: return "void";
+  case int_ : return "int";
+  case array_: return "array_";
+  case array_ref: return "array_ref";
+  default:
+               return "ERROR";
+  }
+}
 } // namespace ccbhj
 #endif

@@ -1,0 +1,26 @@
+int a[3];
+
+int minloc(int a[],  int low, int high)
+{   
+  int i;  int x;  int k;
+  k=low;
+  x=a[low];
+  i=low+1;
+  while(i<high)
+  {  
+    if(a[i]< x)
+    {  
+      x =a[i];
+      k=i;
+    }
+    i=i+1;
+  }
+  return k;  
+}
+
+void main(void) {
+  a[0] = 6;
+  a[1] = 7;
+  a[2] = 2;
+  output(minloc(a, 0, 2));
+}

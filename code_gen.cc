@@ -15,39 +15,52 @@ void IdentifierNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.print_debug("-> ID " + *name);
   const VarEntry *entry = ast_ctx.lookup_var(*name);
   if (!entry) {
-    code_ctx.print_err(std::string("id " + *name + " not found").c_str());
-    return;
+    entry = ast_ctx.lookup_global_var(*name);
+    if (!entry) {
+      code_ctx.print_err("id " + *name + " not found");
+      goto out;
+    }
+    // 获取地址
+    code_ctx.RM_ins("LDA", ac, entry->offset, gp, "load global var memory");
+  } else {
+    code_ctx.RM_ins("LDA", ac, entry->offset, fp, "load local var memory");
   }
-
-  // 获取地址
-  code_ctx.RM_ins("LDA", ac, entry->offset, fp, "load local var memory");
-  // 获取值
-  if (code_ctx.get_val) {
-      code_ctx.RM_ins("LD", ac, 0, ac, "load id value");
+  if (entry->typ == Type::array_ref)  {
+    code_ctx.RM_ins("LDA", ac, entry->offset, fp, "load refered array memory"); 
   }
+  if (entry->typ == Type::array_ && code_ctx.state.get_addr_if_array)
+    goto out;
+  if (code_ctx.state.get_val) {
+    code_ctx.RM_ins("LD", ac, 0, ac, "load id value");
+  }
+out:
   code_ctx.print_debug("<- ID");
 }
 
 void AsgNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.print_debug("-> assign ");
   const VarEntry* entry = ast_ctx.lookup_var(*id->name);
+  CodeGenContext::State old_state(code_ctx.state);
   if (!entry) {
-    code_ctx.print_err("address not found");
-    goto out;
+    entry = ast_ctx.lookup_global_var(*id->name);
+    if (!entry) {
+      code_ctx.print_err("address not found");
+      goto out;
+    }
   } 
   if(entry->typ == Type::void_) {
     code_ctx.print_err("invalid assignment");
     goto out;
   } 
-  code_ctx.get_val = false;
 
+  code_ctx.set_state(false, false);
   id->gen_code(code_ctx, ast_ctx); // store left value's address in ac1
   code_ctx.RM_ins("ST", ac, code_ctx.tmp_offset--, fp, "push left value");
   code_ctx.RM_ins("LDA", mp, -1, mp, "grow stack");
 
-  code_ctx.get_val = true;
+  code_ctx.set_state(true, false);
   rhs->gen_code(code_ctx, ast_ctx); // store right value in ac
-
+  
   // 因为ac1中的左值可能丢失(被右值生成使用)
   // 所以需要从内存再load一次
   code_ctx.RM_ins("LD", ac1, ++code_ctx.tmp_offset, fp, "load left value again");
@@ -57,19 +70,21 @@ void AsgNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.RM_ins("ST", ac, 0, ac1, "assign: store value");
 
 out:
+  code_ctx.state = old_state;
   code_ctx.print_debug("<- assign");
 }
 
 void BinaryOperator::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.print_debug("-> BOp");
-  code_ctx.get_val = true;
+  CodeGenContext::State old_state(code_ctx.state);
+  code_ctx.set_state(true, false);
   left->gen_code(code_ctx, ast_ctx);
 
   code_ctx.RM_ins("ST", ac, code_ctx.tmp_offset--, fp,"push left operand");
   code_ctx.RM_ins("LDA", mp, -1, mp, "grow stack");
 
-  code_ctx.get_val = true;
   right->gen_code(code_ctx, ast_ctx);
+  code_ctx.state = old_state;
   code_ctx.RM_ins("LD", ac1, ++code_ctx.tmp_offset , fp , "recover left operand");
   code_ctx.RM_ins("LDA", mp, 1, mp, "grow stack");
   switch (op) {
@@ -155,15 +170,15 @@ void UnaryOperator::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
 
 void WhileNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   ast_ctx.new_scope();
-
   code_ctx.print_debug("-> while");
+
   int saved_loc_1 = code_ctx.skip(0);
   code_ctx.print_debug("jump here after body");
   this->cond->gen_code(code_ctx, ast_ctx);
 
   int saved_loc_2 = code_ctx.skip(1);
   th->gen_code(code_ctx, ast_ctx);
-  code_ctx.RM_ins("LDA", pc, saved_loc_1, 0, "jump to cond");
+  code_ctx.RM_ins("LDC", pc, saved_loc_1, 0, "jump to cond");
 
   int current_loc = code_ctx.skip(0);
   code_ctx.backup(saved_loc_2);
@@ -215,14 +230,27 @@ void Formal::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
     code_ctx.print_err(std::string("value" + *id->name + " has already declared at " + std::to_string(id->lineno)).c_str());
     return;
   } else {
-    // add id in table.
+    // global variable 
+    if (ast_ctx.is_global_scope()) {
+      int of = ast_ctx.global_var_table.size();
+      // global variable is stored below the gp 
+      // so its offset must be negative or zero.
+      VarEntry entry {
+        .typ = type_decl,
+        .lineno = id->lineno,
+        .offset = -of,
+        .length = 1
+      };
+      ast_ctx.add_var_in_global(*id->name, entry);
+      return;
+    } 
+    // local variable
     assert(code_ctx.tmp_offset <= -2);
     VarEntry entry {
       .typ = type_decl,
       .lineno = id->lineno,
       .offset = code_ctx.tmp_offset--,
-      .is_func = false,
-      .length = -1
+      .length = 1
     };
     ast_ctx.add_var_in_scope(*id->name, entry);
 
@@ -235,42 +263,86 @@ void Formal::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
 
 void ArrayFormal::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.print_debug("<- array declaration");
-
-  const VarEntry *entry = ast_ctx.lookup_var(*id->name);
-  if (entry) {
-    code_ctx.print_err(std::string("value" + *id->name + " has already declared at " + std::to_string(id->lineno)).c_str());
+  const VarEntry *entry = nullptr;
+  VarEntry e;
+  if (ast_ctx.is_global_scope()) {
+    entry = ast_ctx.lookup_global_var(*id->name);
+    if (entry) {
+      code_ctx.print_err("value" + *id->name + " has already declared in global  at " + std::to_string(id->lineno));
+      goto out;
+    }
+    e.typ = type_decl;
+    e.lineno = id->lineno;
+    e.offset = 0;
+    e.length = this->length;
+    for (auto it = ast_ctx.global_var_table.cbegin();
+        it != ast_ctx.global_var_table.cend();
+        it++)
+      e.offset -= it->second.length;
+    e.offset -= (this->length - 1);
+    ast_ctx.add_var_in_global(*id->name, e);
+    code_ctx.RM_ins("LDA", mp, e.offset, gp, "grow stack");
   } else {
-    assert(code_ctx.tmp_offset <= -2);
-    code_ctx.tmp_offset -= length;
-    VarEntry entry {
-      .typ = Type::array_,
-      .lineno = id->lineno,
-      .offset = code_ctx.tmp_offset + 1,
-      .is_func = false,
-      .length = this->length,
-    };
-    ast_ctx.add_var_in_scope(*id->name, entry);
+    entry = ast_ctx.lookup_var(*id->name);
+    if (entry) {
+      code_ctx.print_err("value" + *id->name + " has already declared at " + std::to_string(id->lineno));
+      goto out;
+    } else {
+      assert(code_ctx.tmp_offset <= -2);
+      code_ctx.tmp_offset -= length;
+      e.typ = type_decl;
+      e.lineno = id->lineno,
+      e.offset = code_ctx.tmp_offset,
+      e.length = this->length;
+      code_ctx.tmp_offset--; 
+      ast_ctx.add_var_in_scope(*id->name, e);
 
-    code_ctx.RM_ins("LDA", mp, -length, mp, "grow stack");
+      code_ctx.RM_ins("LDA", mp, -(length + 1), mp, "grow stack");
+    }
   }
+out:
   code_ctx.print_debug("-> array declaration");
 }
 
-void ArrayRef::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
-  code_ctx.print_debug("-> array ref");
+void ArrayEle::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
+  code_ctx.print_debug("-> array element");
   const VarEntry *p = ast_ctx.lookup_var(*this->name);
-  if (!p || p->typ != Type::array_) {
-    code_ctx.print_err("array not declared");
-  } else {
-    index->gen_code(code_ctx, ast_ctx); // put index in ac
-    // 这里数组可能越界
-
-    if (code_ctx.get_val) 
-      code_ctx.RM_ins("LD", ac, p->offset, ac, "load value");
-    else 
-      code_ctx.RM_ins("LDA", ac1, p->offset, ac, "load addr");
+  CodeGenContext::State old_state(code_ctx.state);
+  bool is_global = false;
+  if (!p ) {
+    p = ast_ctx.lookup_global_var(*this->name);
+    if (!p)  {
+      code_ctx.print_err("array not declared");
+      goto out;
+    } else {
+      is_global = true;
+    }
   }
-  code_ctx.print_debug("<- array ref");
+
+  if (p->typ != Type::array_&& p->typ != Type::array_ref) {
+    code_ctx.print_err(*this->name + " is not a array");
+    goto out;
+  }
+  code_ctx.set_state(true, false);
+  index->gen_code(code_ctx, ast_ctx); // put index in ac
+  code_ctx.state = old_state;
+  // 这里数组可能越界
+  code_ctx.RM_ins("LDA", ac1, 0, ac, "copy index to ac1");
+  if (is_global)
+    code_ctx.RM_ins("LDA", ac, p->offset, gp, "load global array addr");
+  else 
+    code_ctx.RM_ins("LDA", ac, p->offset, fp, "load array addr");
+  if (p->typ == Type::array_ref) {
+    code_ctx.RM_ins("LD", ac, 0, ac, "load referred array addr");
+  }
+  code_ctx.RO_ins("ADD", ac, ac1, ac, "add offset");
+
+  if (code_ctx.state.get_addr_if_array)
+    goto out;
+  if (code_ctx.state.get_val) 
+    code_ctx.RM_ins("LD", ac, 0, ac, "load value");
+out:
+  code_ctx.print_debug("<- array element");
 }
 
 void BlockNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
@@ -319,7 +391,6 @@ void FuncDeclNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   }
   FuncEntry entry;
   entry.meta_data.lineno = name->lineno;
-  entry.meta_data.is_func = true;
   entry.meta_data.typ = ret_type;
   entry.meta_data.offset = code_ctx.skip(0); 
 
@@ -327,17 +398,18 @@ void FuncDeclNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.RM_ins("ST", ac, -1, fp, "store return point");
   std::map<std::string, VarEntry> &arg_tab = entry.params;
   int i = 1;
-  if (formals )
+  if (formals)
     for (Formal* p: formals->formals) {
       VarEntry ventry;
-      ventry.is_func = false;
       ventry.lineno = p->id->lineno;
       ventry.offset = i++; // not know yet
       ventry.typ = p->type_decl;
       if (arg_tab.find(*p->id->name) != arg_tab.end()) {
         code_ctx.print_err("argument has declaration");
         return;
-      }
+      } 
+      if (ventry.typ == Type::array_)
+        ventry.length = ((ArrayFormal*)p)->length;
       arg_tab.emplace(std::make_pair(*p->id->name, ventry));
       ast_ctx.add_var_in_scope(*p->id->name, ventry);
     }
@@ -350,22 +422,31 @@ void FuncDeclNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.tmp_offset = cur_tmp_offset;
   
   ast_ctx.pop_func_scope();
-  if (!ast_ctx.has_return && entry.meta_data.typ != Type::void_) 
-    code_ctx.print_err("function: " + *name->name + " need return statement");
+  if (!ast_ctx.has_return ) {
+    if (entry.meta_data.typ != Type::void_)  {
+      code_ctx.print_err("function: " + *name->name + " need return statement");
+    } else {
+      ReturnNode *ret = new ReturnNode(nullptr);
+      ret->gen_code(code_ctx, ast_ctx);
+      delete ret;
+    }
+  }
 
   code_ctx.print_debug("<- function declaration");
 }
 
 void MethodCallNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.print_debug("-> function call");
+  CodeGenContext::State old_state(code_ctx.state);
   if (*id->name == "output" && this->args->args.size() == 1) {
-    code_ctx.get_val = true;
+    code_ctx.set_state(true, false);
     this->args->args.at(0)->gen_code(code_ctx, ast_ctx);
     code_ctx.RO_ins("OUT", ac, 0, 0, "write ac");
+    code_ctx.print_debug("<- function call");
     return;
   } else if (*id->name == "input") {
     code_ctx.RO_ins("IN",  ac, 0, 0, "read integer value to ac");
-    code_ctx.get_val = false; // load address in ac1
+    code_ctx.print_debug("<- function call");
     return;
   }
   auto it = ast_ctx.func_table.find(*id->name);
@@ -374,17 +455,20 @@ void MethodCallNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
     code_ctx.print_debug("<- function call");
     return;
   } 
-  // check args' count
-  if (args->args.size() != it->second.params.size()) {
-    code_ctx.print_err("args not match");
-    code_ctx.print_debug("<- function call");
-    return;
-  } 
+  if(args) {
+    // check args' count
+    if (args->args.size() != it->second.params.size()) {
+      code_ctx.print_err("args not match");
+      code_ctx.print_debug("<- function call");
+      return;
+    } 
+  }
   // 参数是在fp上面的
   // 所以其offset为整数且非0(0为fp的位置)
   // 且第一个参数在低地址(离fp最近), 最后一个参数在高地址
   if (args) {
     // code_ctx.RM_ins("LDA", mp, -args->args.size(), mp, "grow stack for args");
+    code_ctx.state.get_addr_if_array = true;
     for (auto it = args->args.rbegin(); it != args->args.rend(); it++) {
       (*it)->gen_code(code_ctx, ast_ctx); // calculate arg and store in ac
       code_ctx.RM_ins("ST", ac, code_ctx.tmp_offset--, fp, "push param");
@@ -402,9 +486,12 @@ void MethodCallNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.RM_ins("LDC", pc, it->second.meta_data.offset, 0, "jump to function" );
 
   // pop args 
-  code_ctx.RM_ins("LDA", mp, args->args.size(), mp, "shrink stack for args");
-  code_ctx.tmp_offset += args->args.size();
+  if (args) {
+    code_ctx.RM_ins("LDA", mp, args->args.size(), mp, "shrink stack for args");
+    code_ctx.tmp_offset += args->args.size();
+  }
 
+  code_ctx.state = old_state;
   code_ctx.print_debug("<- function call");
 }
 
@@ -414,9 +501,12 @@ void ArgsNode::gen_code(CodeGenContext &, Context &) {
 
 void ReturnNode::gen_code(CodeGenContext &code_ctx, Context &ast_ctx) {
   code_ctx.print_debug("-> return");
+  CodeGenContext::State old_state = code_ctx.state;
+  code_ctx.set_state(true, false);
   if (expr) {
     expr->gen_code(code_ctx, ast_ctx); // load value into ac;
   }
+  code_ctx.state = old_state;
 
   code_ctx.RM_ins("LDA", mp, 0, fp, "shrink stack");
   code_ctx.RM_ins("LD", fp, 0, fp, "restore fp");

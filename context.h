@@ -14,11 +14,11 @@ namespace ccbhj {
 struct VarEntry {
   Type typ;
   int lineno;
-  // 如果是变量entry, 那么此offset指离fp的offset(形参时为正, 局部变量为负)
+  // 如果是变量entry, 那么此offset指离fp(或者gp)的offset
+  // 全局变量与形参时为正, 局部变量为负
   // 如果是函数, 那么offset指函数的位置(eloc)
   // 注意: 因为栈是向下增长的, 所以offset必须是非正数.
   int offset; 
-  bool is_func = false;
   // 如果变量是数组, 那么还要存储长度
   int length;
 };
@@ -46,6 +46,8 @@ public:
   
   // 存储函数表
   std::map<std::string, FuncEntry> func_table;
+
+  VarTable global_var_table;
 
   bool is_debug = false;
   bool has_return = false;
@@ -107,10 +109,12 @@ public:
         pdebug("pop" + it->first );
       }
     func_scopes.top().pop_back();
-    pdebug(" block scope");
+    pdebug("pop block scope");
   }
 
-  inline const VarEntry* lookup_var(const std::string &name) {
+  const VarEntry* lookup_var(const std::string &name) {
+    if (func_scopes.empty())
+      return nullptr;
     FuncScope &current_func = func_scopes.top();
     for (int i = current_func.size() - 1; i >= 0; i--) {
         auto fi = current_func.at(i).find(name);
@@ -120,7 +124,14 @@ public:
     return nullptr;
   }
 
-  inline bool add_var_in_scope(const std::string &name, VarEntry &entry) {
+  const VarEntry* lookup_global_var(const std::string &name) {
+    auto it = global_var_table.find(name);
+    if (it != global_var_table.end()) 
+      return &it->second;
+    return nullptr;
+  }
+
+  bool add_var_in_scope(const std::string &name, VarEntry &entry) {
     FuncScope &current_func = func_scopes.top(); 
     VarTable &tab = current_func.back();
     if (tab.find(name) != tab.end()) {
@@ -131,7 +142,27 @@ public:
     return true;
   }
 
-  int add_func(const std::string &name, FuncEntry &entry) {
+  inline bool is_global_scope() {
+    return func_scopes.empty();
+  }
+
+  // add_var_in_global 添加一个全局变量
+  // 若在一个函数作用域内添加, 添加失败且返回-2
+  // 若变量已存在, 添加失败且返回-1
+  inline int add_var_in_global(const std::string &name, VarEntry &entry) {
+    auto it = global_var_table.find(name);
+    if (!is_global_scope()) {
+      return -2;
+    }
+    if (it != global_var_table.end()) {
+      return -1;
+    } 
+    global_var_table.emplace(std::make_pair(name, entry));
+    pdebug("add global var "+ name);
+    return 1;
+  }
+
+  inline int add_func(const std::string &name, FuncEntry &entry) {
     if (func_table.find(name) != func_table.end())
       return 0;
     func_table.emplace(std::make_pair(name, entry));

@@ -350,7 +350,7 @@ namespace ccbhj {
         S_expr_stmt = 47,                        // expr_stmt
         S_iteration_stmt = 48,                   // iteration_stmt
         S_return_stmt = 49,                      // return_stmt
-        S_array_ref = 50,                        // array_ref
+        S_array_ele = 50,                        // array_ele
         S_expr = 51,                             // expr
         S_comparision = 52,                      // comparision
         S_numeric = 53,                          // numeric
@@ -842,7 +842,7 @@ namespace ccbhj {
     /// Constants.
     enum
     {
-      yylast_ = 244,     ///< Last index in yytable_.
+      yylast_ = 233,     ///< Last index in yytable_.
       yynnts_ = 23,  ///< Number of nonterminal symbols.
       yyfinal_ = 13 ///< Termination state number.
     };

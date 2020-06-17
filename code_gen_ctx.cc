@@ -53,13 +53,14 @@ void CodeGenContext::gen_code() {
 
   // initialization
   print_debug("standard initialization");
-  RM_ins("LD", mp, 0, ac, "load mp with max address");
-  RM_ins("LDA", fp, 0, mp, "copy mp to fp");
+  RM_ins("LD", gp, 0, ac, "load gp with max address");
+  RM_ins("LDA", mp, 0, gp, "copy mp to fp");
   RM_ins("ST", ac, 0, ac, "clear location 0");
   this->tmp_offset = -2;
+  print_debug("end initialization");
   // ast_ctx->new_func_scope(); // main scope
   
-  int loc = skip(5);
+  int loc = skip(7);
   
   for (StmtNode *p : ast_ctx->programBlock->statements) {
     p->gen_code(*this, *this->ast_ctx);
@@ -71,7 +72,13 @@ void CodeGenContext::gen_code() {
   }
   
   backup(loc);
-
+  int goffset = 0;
+  for (auto it = ast_ctx->global_var_table.begin();
+      it != ast_ctx->global_var_table.end();
+      it++)
+    goffset -= it->second.length;
+  RM_ins("LDA", mp, goffset, gp, "grow stack for global variable");
+  RM_ins("LDA", fp, 0, mp, "copy mp to fp");
   RM_ins("LDA", mp, -2, mp, "grow stack");
   RM_ins("LDA", ac, 1, pc, "save return point");
   int main_loc = it->second.meta_data.offset;

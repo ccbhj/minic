@@ -45,14 +45,30 @@ public:
   // 出栈则为RM_ins("LD", reg, ++tmp_offset, fp, "")
   int tmp_offset = 0;
   
-  // 当get_val为true时, 获取变量的值, 而不是地址
-  bool get_val = false;
-
   // main函数开始的位置(为一个指令号)
   int main_func_offset = 0 ;
 
   const static  size_t LINE_SIZE = 1024;
   
+  struct State {
+    // 当get_val为true时, 获取变量的值, 而不是地址
+    bool get_val = false;
+    
+    // 当get_addr_if_array为true时, 只对数组求地址
+    // 用在函数调用时数组传参
+    // 当然如果get_val为false, 那么此域也没必要设为true 
+    bool get_addr_if_array = false;
+    State() = default;
+    State(State& state) {
+      this->get_addr_if_array = state.get_addr_if_array;
+      this->get_val = state.get_val;
+    }
+    void operator = (const State &other) {
+      this->get_addr_if_array = other.get_addr_if_array;
+      this->get_val = other.get_val;
+    }
+  };
+  State state;
 public:
   explicit CodeGenContext(Context *ctx) : ast_ctx(ctx) { }
 
@@ -93,6 +109,14 @@ public:
       (*output) << "# " << comment << std::endl;
   }
   
+
+  inline void set_state(bool get_val, bool get_addr_if_array) {
+    this->state.get_val = get_val;
+    this->state.get_addr_if_array = get_addr_if_array;
+  }
+  inline void set_state(bool get_val) {
+    this->state.get_val = get_val;
+  }
   
   // RO_ins 写一条寄存器-寄存器指令
   // op: 操作

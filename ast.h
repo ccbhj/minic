@@ -12,7 +12,6 @@
 
 #include "tokens.h"
 
-#define T2STR(t) (t == Type::int_ ? "int" : "void")
 
 namespace ccbhj {
 class Context;
@@ -129,11 +128,11 @@ public:
   void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };
 
-class ArrayRef : public IdentifierNode {
+class ArrayEle : public IdentifierNode {
 public:
   ExpNode *index;
-  ArrayRef(IdentifierNode *id, ExpNode *index): IdentifierNode(id->name, id->lineno), index(index) {}
-  ~ArrayRef() { delete index; }
+  ArrayEle(IdentifierNode *id, ExpNode *index): IdentifierNode(id->name, id->lineno), index(index) {}
+  ~ArrayEle() { delete index; }
 
   void print(std::ostream &os, const size_t padding) const override {
     os << get_indent(padding) << "array quote: " << std::endl;
@@ -164,14 +163,23 @@ public:
 class ArrayFormal : public Formal {
 public:
   int length;
-  ArrayFormal(int typ, IdentifierNode *id, int len = 0) : Formal(typ, id), length(len) {}
+  ArrayFormal(IdentifierNode *id, int len = -1) : Formal(Type::array_, id), length(len) {
+    if (len == -1) {
+      Formal::type_decl = array_ref;
+    }
+  }
   ~ArrayFormal() { }
 
   void print(std::ostream &os, const size_t padding) const override {
-    os << get_indent(padding) << "array: " << std::endl;
-    Formal::print(os, padding + 1);
-    if (length) 
-      os << get_indent(padding + 1) << "length: " << length << std::endl;
+    if (type_decl == Type::array_) {
+      os << get_indent(padding) << "array: " << std::endl;
+      Formal::print(os, padding + 1);
+      if (length) 
+        os << get_indent(padding + 1) << "length: " << length << std::endl;
+    } else {
+      os << get_indent(padding) << "array reference: " << std::endl;
+      Formal::print(os, padding + 1);
+    }
   }
   void gen_code(CodeGenContext &code_ctx, Context &ast_ctx) override;
 };

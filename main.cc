@@ -28,7 +28,7 @@ void print_usage() {
   std::cout << "       -h  print help info and exit" << endl;
 }
 
-int parse_args(int argc, char** argv, Driver &drv) {
+int parse_args(int argc, char** argv) {
   int j = 1;
   for (int i = 1; i < argc; i++) {
     if (argv[i][0] != '-')
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     return 0;
   } 
   Driver driver;
-  int parse = parse_args(argc, argv, driver);
+  int parse = parse_args(argc, argv);
   if (parse < 0) 
     return 0;
   bool ptree = false;

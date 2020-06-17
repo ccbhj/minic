@@ -91,7 +91,7 @@ using std::endl;
 
 
 // declare non-terminal here
-%type <IDENT> id array_ref
+%type <IDENT> id array_ele
 %type <EXPR> numeric expr comparision 
 %type <ARGS> args
 %type <BLOCK> program declaration_list stmt_list  compound_stmt  
@@ -127,9 +127,7 @@ declaration: var_declaration  { $$ = $1; }
 ;
 
 var_declaration: var_type id SEMI { $$ = new Formal($1, $2);}
-               | var_type id LBRACKET INT_CONST RBRACKET SEMI { $$ = new
-               ArrayFormal($1, $2, std::stoi(*$4)); delete $4; }
-               |  var_type id LBRACKET expr RBRACKET SEMI  { cout << "array length must be a const integer" << endl; yyerrok; }
+               | var_type id LBRACKET INT_CONST RBRACKET SEMI { $$ = new ArrayFormal($2, std::stoi(*$4)); delete $4; }
 ;
 
 // variable can only be integer yet.
@@ -159,7 +157,7 @@ param_list: param { $$ = new Formals(); $$->formals.push_back(static_cast<Formal
 
 // int print(int array[])
 param: var_type id { $$ = new Formal($1, $2); }
-     | var_type id LBRACKET RBRACKET {$$ = new ArrayFormal($1, $2); }
+     | var_type id LBRACKET RBRACKET {$$ = new ArrayFormal($2); }
 ;
 
 // local_declaration is part of stmt_list here 
@@ -196,7 +194,7 @@ return_stmt: RETURN SEMI  { $$ = new ReturnNode(); }
            | RETURN expr SEMI { $$ = new ReturnNode($2); }
 ;
 
-array_ref: id LBRACKET expr RBRACKET  { $$ = new ArrayRef($1, $3); }
+array_ele: id LBRACKET expr RBRACKET  { $$ = new ArrayEle($1, $3); }
 
 expr: comparision 
     | LPAREN expr RPAREN     { $$ = $2;}
@@ -207,9 +205,9 @@ expr: comparision
     | MINUS expr %prec NEG   { $$ = new UnaryOperator(UaOpt::neg, $2);}
     | id ASSIGN expr         { $$ = new AsgNode($1, $3); }
     | id LPAREN args RPAREN  { $$ = new MethodCallNode($1, $3); }
-    | array_ref ASSIGN expr  { $$ = new AsgNode($1, $3);}
+    | array_ele ASSIGN expr  { $$ = new AsgNode($1, $3);}
     | numeric                
-    | array_ref              { $$ = $<EXPR>1;}
+    | array_ele              { $$ = $<EXPR>1;}
     | id                     { $$ = $1; }
 ;
 
